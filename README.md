@@ -13,13 +13,13 @@ package (version)
 
 ----
 
-python (3.8.10)
-astropy (5.1)
-matplotlib (3.6.2)
-cdflib (0.4.9)
-numpy (1.23.5)
-pathlib (1.0.1)
-scipy (1.9.3)
-xarray (2022.12.0)
+python (3.8.10); 
+astropy (5.1); 
+matplotlib (3.6.2); 
+cdflib (0.4.9); 
+numpy (1.23.5); 
+pathlib (1.0.1); 
+scipy (1.9.3); 
+xarray (2022.12.0);
 
 ----

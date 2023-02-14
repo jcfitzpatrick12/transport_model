@@ -76,7 +76,8 @@ class sort_WIND_data:
         omni_fluxes_smoothed = self.event_data.omni_fluxes_smoothed
         
         #finding approximate time resolution
-        t_res = (omni_times[2]-omni_times[1]).total_seconds()
+        t_res = (omni_times[30]-omni_times[29]).total_seconds()
+
 
         
         n_ener = np.shape(omni_fluxes)[0]

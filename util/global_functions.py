@@ -60,7 +60,7 @@ class folder_functions:
 
 
 def return_datapath():
-    return r'\Users\jcfit\Desktop\Summer Research\Transport Modelling\Electron Transport Modelling\Numerical Modelling Scripts\data'
+    return r'\\Users\\jcfit\Desktop\Summer Research\\Transport Modelling\\Electron Transport Modelling\\Numerical Modelling Scripts\data'
 
 '''
 class to organise the simulation input paramaters

@@ -40,6 +40,7 @@ import warnings
 
 from datetime import datetime
 
+
 '''
 importing core-functionss
 '''
@@ -73,7 +74,7 @@ from util.event_fit_WIND import fit_WIND_event
 
 
 '''
-Input parameters here
+Input parameters here5
 
 Simulation is currently vectorised over alpha, mean free path pairs and energy
 '''
@@ -85,20 +86,30 @@ Np=10000
 #choose the alpha_values (vectorised) NO ENERGY DEPENDENCE FOR CONSIDERATION OF ONE ENERGY
 alpha_vals = [0.0]
 #choosing kappa (non-vectorised, must be a scalar)
-kappa=1.0
+kappa=0.5
 #first entries are \lamda- second entry is \lamda+. Holds mfp0 as in the attached document
 #mfp0_vals = [[1.5,1.5]]
 #mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
 #mfp0_vals = [[1.5,1.5],[20.0,1.5]]
 #mfp0_vals = [[30.0,2.0]]
-#mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
-mfp0_vals = [[2.0,2.0],[20.0,2.0]]
+mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
+#mfp0_vals = [[2.0,2.0],[20.0,0.8]]
+#mfp0_vals=[[100.0,1.8],[1.8,1.8]]
+#mfp0_vals = [[2.0,2.0],[20.0,2.0]]
 #mfp0_vals = [[300.0,1.5]]
+
+
 
 
 ## what electron energies to consider (in keV) (vectorised)res
 #CONSTRAINT: must be a member of [27,40,67,110,180,310,520] 
-ee=[110]
+'''
+temporary constraint, although can simultaneously compute different energies, for "all_simulation_comparisons", assumption is only considering one energy here
+change in the future!
+'''
+#ee=[67,110]
+#ee=[67,110,180]
+ee = [110]
 #value of h
 h_val=0.05
 #end time [d]s
@@ -140,7 +151,7 @@ M = 4
 z_obs = 1.2
 z_tol=0.015
 #time bin widths for the electron fluxes (in seconds, must be larger than the timestep!)
-t_binwidth = 70
+t_binwidth = 40
 #ADD z_beds to here! min and max bin edges to plot in the z and mu plots [zmin,zmax,spacing]
 z_beds = np.linspace(0.04,3.0,150)
 #z_beds = np.linspace(1.0,2.0,150)
@@ -155,7 +166,7 @@ mfp_toplot=[2.0,2.0]
 #alpha valu
 alpha_toplot =0.0
 #appa value to
-kappa_toplot=1.0
+kappa_toplot=0.5
 #which energy channel (keV)\
 energy_toplot = 110
 #step to plot for zmu must satistfy 0<=step_toplot<=M
@@ -169,8 +180,10 @@ energy_char_toplot= [110]
 #plots_toplot = ['plot_one_omni_characteristic','plot_all_omni_characteristic','plot_WIND_one_energy_comparison']
 #plots_toplot = ['plot_one_omni_characteristic','plot_all_omni_characteristic','plot_WIND_one_energy_comparison']
 #plots_toplot = ['plot_all_simulations_one_energy','plot_WIND_one_energy_comparison']
-plots_toplot = ['plot_all_simulations_one_energy']
-#plots_toplot = ['plot_WIND_one_energy_comparison']
+#plots_toplot = ['plot_all_simulations_one_energy','plot_all_omni_characteristic',]
+#plots_toplot = ['plot_all_omni_characteristic','plot_all_simulations_one_energy','plot_WIND_one_energy_comparison']
+plots_toplot = ['plot_WIND_one_energy_comparison','plot_all_simulations_one_energy','plot_all_omni_characteristic']
+#plots_toplot=['plot_WIND_one_energy_comparison']
 
 
 #raise a Warning if...
@@ -193,14 +206,16 @@ event analysis parameters
 
 #event to analyse YYYY-mm-dd[a/b/c...]
 #which event are we consdering
-event_considering = '1998-08-29'
+
+#event_considering = '1998-08-29'
+event_considering='1998-08-29'
 #manual_injection_override
 inj_manual_override = False
 #inj_time = datetime(year=2002,month=12,day=12,hour=0,minute=43)-timedelta(minutes=radio_travel_time_minutes)
 #inj_time = datetime(year=2004,month=3,day=16,hour=8,minute=58,second=30)-timedelta(minutes=radio_travel_time_minutes)
 #inj_time = datetime(year=2002,month=10,day=20,hour=11,minute=37)-timedelta(minutes=radio_travel_time_minutes)
-inj_manual_override_date = datetime(year=2000,month=3,day=7,hour=21,minute=57)
-#inj_manual_override_date=datetime(year=2004,month=3,day=16,hour=8,minute=58,second=30)
+#inj_manual_override_date = datetime(year=2000,month=3,day=7,hour=21,minute=57)
+inj_manual_override_date=datetime(year=2004,month=3,day=16,hour=8,minute=58,second=30)
 #plot validate the extracted omni_chars
 validate_omni_chars = False
 #which energy channel do we want to plot in the preliminary plots
@@ -210,7 +225,7 @@ event_energy_toplot=energy_toplot
 t_evaluate_background = 20
 #what is the window size for the data smoothing?
 #input in seconds, will convert to number of data points in the code.
-window_size = 200
+window_size = 250
 #find the injection time, just set as time of max in WAVES/RAD2 higher frequencies
 #modify later to be max intensmity at a given frequency, be wary if there are multiple bursts! simplified treatment
 #actually, no just do that. below is the max frequency (kHz)
@@ -222,7 +237,7 @@ fit_chars = ['t_peak[s]']
 #break energy [keV] used in plotting
 break_energy = 45
 #explicit energies to consider in the fitting
-fit_energies=[67]
+fit_energies=[110]
 ####
 
 '''

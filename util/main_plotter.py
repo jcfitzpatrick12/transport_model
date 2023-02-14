@@ -21,6 +21,10 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.gridspec import GridSpec
+
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import matplotlib as mpl
+
 import numpy as np
 import os
 
@@ -1041,6 +1045,7 @@ class plot_functions:
         '''
         en_inds = self.energy_to_index()
         #en_inds = 0
+
         
         for char in self.char_toplot:
             #extract the sim charecteristics:
@@ -1201,13 +1206,20 @@ class plot_functions:
         #return that index array
         return inds
 
+
+    
+    '''
+    Adapt this to select the chosen energy out of multiply simulated energies?
+    '''
+
     def plot_all_omni_characteristic(self,plot,string_dict,folder_path):
+
         #loading in the event chars to plot
         event_chars = np.load(os.path.join(self.data_path,"event_chars.npy"))
         event_chars_uncertainties = np.load(os.path.join(self.data_path,"event_chars_uncertainties.npy"))
         #loading in all the computed simulation characteristics and labels
         sim_chars_data = self.build_sim_chars_over_kappa()
-        #extracting teh energies requested to plot
+        #extracting the energies requested to plot
         en_inds = self.energy_to_index()
 
         '''
@@ -1217,6 +1229,7 @@ class plot_functions:
         #decompose into sim_chars and sim_vars as defined on construction
         sim_vars = sim_chars_data[...,0]
         sim_chars = sim_chars_data[...,1]
+
         #find how many simulations are being considered overall
         multiplied_tup = np.prod(np.shape(sim_chars_data)[0:3])
         #build the reshaped array for easy plotting (flattening over the simulations)
@@ -1226,66 +1239,149 @@ class plot_functions:
         n_kappa,n_alpha,n_pairs = np.shape(sim_chars_data)[0:3]
 
 
-        #extracting teh required energy data
+        #extracting the required energy data
         sim_chars = sim_chars[...,en_inds,:]
         sim_vars =sim_vars[...,en_inds,:]
         event_chars=event_chars[en_inds,:]
         event_chars_uncertainties = event_chars_uncertainties[en_inds,:]
+
         #defining total WIND energies and cutting depending on requested energy channels
         WIND_energies = np.array([27,40,67,110,180,310,520])
         WIND_energies = WIND_energies[en_inds]
 
-        for char in self.char_toplot:
-            #extract the sim charecteristics:
-            if char=='t_peak':
-                ind=0
-                str_y = '$t_p$ [s]'
-            if char=='t_r':
-                ind=1
-                str_y ='$t_r$ [s]'
-            if char=='t_d':
-                ind=2
-                str_y='$t_d$ [s]'
 
-            #extracting the omni charecteristic based on which one is requested
-            #reassigning so to not destroy the whole array (raises error) and extracting the desired energies
-            sim_omni_chars=sim_chars[...,ind]
-            sim_omni_vars = sim_vars[...,ind]
-            event_omni_chars = event_chars[:,ind]
-            event_omni_chars_uncertainty = event_chars_uncertainties[:,ind]
-            
-            fig,ax =plt.subplots(1,figsize=(7,7))
-            
-            
-            #ax.scatter(WIND_energies,sim_omni_chars,color='green',marker='+')
-            ax.errorbar(WIND_energies,event_omni_chars,yerr=event_omni_chars_uncertainty,color='black',marker='*',capsize=5)
+        '''
+        Building the figure
+        '''
+
+        #creating the widths/heights aspect ratios (last axis will be the colorbar)
+        wrs = []
+        for k in range(n_kappa):
+            wrs.append(1)
+        wrs.append(0.1)
+
+        fig = plt.figure(figsize=(20,7))
+        gs = GridSpec(1, n_kappa+1, figure=fig,width_ratios=wrs,height_ratios=[1])
+        #ax1 and ax2 will be the WIND/WAVES data
+        
+        #extracting the omnidirectional characteristics for the event
+        t_p_event = event_chars[0,0]
+        t_r_event = event_chars[0,1]
+        t_d_event = event_chars[0,2]
+
+        #extracting the uncertainties for the event
+        t_p_event_unc = event_chars_uncertainties[0,0]
+        t_r_event_unc = event_chars_uncertainties[0,1]
+        t_d_event_unc = event_chars_uncertainties[0,2]
+
+
+        #finding the maximum decay time for plotting
+        t_d_sim_max = np.max(sim_chars[...,2])
+        t_d_sim_min = np.min(sim_chars[...,2])
+
+
+        #defining the min max for the colorbar
+        #t_p_min must be smaller than that actual minimum so no data points are colored white!
+        #Set the event decay time as grey!
+        t_d_min_cbar = 0
+        t_d_max_cbar = 2
+
+        #defining the diverging colormap (diverging from 1)
+        cmap='coolwarm'
+        #norm=mcolors.TwoSlopeNorm(vcenter=1,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
+
+        #t_d_max = np.max(sim_chars[...,2])+20
+        #t_p_min must be smaller than that actual minimum so no data points are colored white!
+        t_p_min = np.min(sim_chars[...,0])-100
+        t_p_max = np.max(sim_chars[...,0])+100
+
+        for k in range(n_kappa):
+            ax= fig.add_subplot(gs[0, k])
+            ax.scatter(t_r_event,t_p_event,c=1,marker='x',cmap=cmap,s=50,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
+            ax.errorbar(t_r_event,t_p_event,xerr=t_r_event_unc,yerr=t_p_event_unc,color='grey',lw=0.2,capsize=2)
+            for a in range(n_alpha):
+                for m in range(n_pairs):
+                    #extracting the tuple of omnidirectional characteristics
+                    tup = sim_chars[k,a,m,0]
+                    #extracting the tuple of the ascociated simulation used to run that particular simulation
+                    var_tup =sim_vars[k,a,m,0]
+
+                    #extracting teh omnidirectional characteristics
+                    t_p = tup[0]
+                    t_r=tup[1]
+                    t_d=tup[2]
+
+                    #plotting and placing error bars
+                    ax.scatter(t_r,t_p,c=t_d/t_d_event,cmap=cmap,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
+                    ax.errorbar(t_r,t_p,xerr=self.t_binwidth,yerr=self.t_binwidth/2,color='grey',lw=0.2,capsize=2)
+                    ## annotate the selected variable!
+
+                    str_mfp = '$\lambda_{\parallel}^{+/-}$='+str(var_tup[3])+' [AU]'
+                    if var_tup[0]==self.kappa and var_tup[3]==self.mfp_toplot[1]:
+                        ax.annotate(str_mfp,xytext=(t_r-100,t_p+100),xy=(t_r,t_p),arrowprops=dict(arrowstyle='-|>'))
+
+
+            kappa = sim_vars[k,a,m,0,0]
+            str_kappa = "$\kappa=$"+str(kappa)
+            ax.annotate(str_kappa, (0.1,0.9),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+            #ax.errorbar(WIND_energies,event_omni_chars,yerr=event_omni_chars_uncertainty,color='black',marker='*',capsize=5)
             ax.set_xscale('log')
-            ax.set_yscale('log')
-            #ax.set_xlim(10,1000)      
-            #ax.plot(WIND_energies,sim_omni_chars,color='green')
-            ax.plot(WIND_energies,event_omni_chars,color='black')
+            #ax.set_yscale('log')
+            ax.set_xlim(10,1000)   
+            #ax.set_ylim(1000,10000)
+            ax.set_ylim(t_p_min,t_p_max)   
 
-            cmap = plt.cm.nipy_spectral
-            norm = mcolors.Normalize(vmin=0, vmax=multiplied_tup)   
-            n=0
-            for k in range(n_kappa):
-                for alph in range(n_alpha):
-                    for p in range(n_pairs):
-                        n=n+1
-                        tup=sim_omni_chars[k,alph,p]
-            #for i,tup in enumerate(flat_sim_omni_chars):
-                        ax.scatter(WIND_energies,tup,color=cmap(norm(n)),marker='.')
-                        ax.plot(WIND_energies,tup,color=cmap(norm(n)))
-
-
-            ax.set_ylabel(str_y,fontsize=self.fsize_head)
-            ax.set_xlabel('Energy [keV]',fontsize=self.fsize_head)
+            if k==0:
+                ax.set_ylabel('$t_p$ [s]',fontsize=self.fsize_head)
+            ax.set_xlabel('$t_r$ [s]',fontsize=self.fsize_head)
             ax.tick_params(labelsize=self.fsize_ticks)
 
-            plt.show(block=False)
+            if k>0:
+               ax.tick_params(labelleft=False)
 
+
+            plt.setp(ax.get_yminorticklabels(), visible=True)
+
+        '''
+        Setting up the colorbar
+        '''
+        #tricking matplotlib into making a colorbar using a ghost image
+        fig_ghost, ax_ghost = plt.subplots(1,figsize=(7,7))
+        #map_ghost = ax_ghost.imshow(np.array([[1,2],[1,2]]),cmap='viridis',norm=mcolors.LogNorm(vmin=t_p_min,vmax=t_p_max))
+        map_ghost = ax_ghost.imshow(np.array([[1,2],[1,2]]),cmap=cmap,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
+        
+        ax=fig.add_subplot(gs[0, -1])
+        ax.axis('off')
+        cbar = fig.colorbar(map_ghost, ax=ax,location='right',fraction=2.0, pad=2.0,ticks=[0, 1, 2])
+        cbar.set_label('$t_d$ / [$t_d$ (event)]',fontsize=self.fsize_head)
+        cbar.ax.set_yticklabels(['0', '1', '>2'])
+        
+
+        plt.show(block=False)
+
+        
+        #ax.plot(WIND_energies,sim_omni_chars,color='green')
+        #ax.plot(WIND_energies,event_omni_chars,color='black')
+
+        #cmap = plt.cm.nipy_spectral
+        #norm = mcolors.Normalize(vmin=0, vmax=multiplied_tup)   
+        #n=0
+        #for k in range(n_kappa):
+            #for alph in range(n_alpha):
+                #for p in range(n_pairs):
+                    #n=n+1
+                    #tup=sim_omni_chars[k,alph,p]
+        #for i,tup in enumerate(flat_sim_omni_chars):
+                    #ax.scatter(WIND_energies,tup,color=cmap(norm(n)),marker='.')
+                    #ax.plot(WIND_energies,tup,color=cmap(norm(n)))
+
+        
         return None
 
+
+    '''
+    Adapt this to select the chosen energy out of multiply simulated energies?
+    '''
     def plot_all_simulations_one_energy(self,plot,string_dict,folder_path):
         omni_counts_data_overkappa = self.build_omni_counts_over_kappa()
         sim_chars_data_overkappa = self.build_sim_chars_over_kappa()
@@ -1438,10 +1534,10 @@ class plot_functions:
                 ax.stairs(omni_counts,t_bins_inj,color=color_sim,linestyle='--')
                 
                 if n==2:
-                    ax.annotate(str_mfp, (1.05,0.85-0.2*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
+                    ax.annotate(str_mfp, (1.05,0.85-0.3*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
 
             if n==2:
-                ax.annotate(str_energy, (1.05,0.85-0.2*n_mfp),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+                ax.annotate(str_energy, (1.05,0.85-0.3*n_mfp),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
 
             
             if n==n_kappa-1:

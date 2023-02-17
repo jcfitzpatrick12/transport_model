@@ -86,32 +86,19 @@ Np=10000
 #choose the alpha_values (vectorised) NO ENERGY DEPENDENCE FOR CONSIDERATION OF ONE ENERGY
 alpha_vals = [0.0]
 #choosing kappa (non-vectorised, must be a scalar)
-kappa=0.5
+kappa=1.0
 #first entries are \lamda- second entry is \lamda+. Holds mfp0 as in the attached document
-#mfp0_vals = [[1.5,1.5]]
 #mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
-#mfp0_vals = [[1.5,1.5],[20.0,1.5]]
-#mfp0_vals = [[30.0,2.0]]
-mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
-#mfp0_vals = [[2.0,2.0],[20.0,0.8]]
-#mfp0_vals=[[100.0,1.8],[1.8,1.8]]
-#mfp0_vals = [[2.0,2.0],[20.0,2.0]]
-#mfp0_vals = [[300.0,1.5]]
-
-
+mfp0_vals = [[30.0,1.75],[1.75,1.75]]
 
 
 ## what electron energies to consider (in keV) (vectorised)res
 #CONSTRAINT: must be a member of [27,40,67,110,180,310,520] 
-'''
-temporary constraint, although can simultaneously compute different energies, for "all_simulation_comparisons", assumption is only considering one energy here
-change in the future!
-'''
 #ee=[67,110]
 #ee=[67,110,180]
 ee = [110]
 #value of h
-h_val=0.05
+h_val=0.005
 #end time [d]s
 t_end=1.5/24
 #start injection at t=0 [d], end injection at t2 [d]
@@ -151,7 +138,7 @@ M = 4
 z_obs = 1.2
 z_tol=0.015
 #time bin widths for the electron fluxes (in seconds, must be larger than the timestep!)
-t_binwidth = 40
+t_binwidth = 60
 #ADD z_beds to here! min and max bin edges to plot in the z and mu plots [zmin,zmax,spacing]
 z_beds = np.linspace(0.04,3.0,150)
 #z_beds = np.linspace(1.0,2.0,150)
@@ -161,12 +148,17 @@ z_beds = np.linspace(0.04,3.0,150)
 Input variables to plot
 '''
 
+###-###
+###-###
+
 #mean free path
-mfp_toplot=[2.0,2.0]
+mfp_toplot=[30.0,1.75]
+#use the imbalanced case here for the comparisons (first element is the symmetric, second is the asymmetric )
+mfp_comp_toplot = [[1.75,1.75],[30.0,1.75]]
 #alpha valu
 alpha_toplot =0.0
 #appa value to
-kappa_toplot=0.5
+kappa_toplot=1.0
 #which energy channel (keV)\
 energy_toplot = 110
 #step to plot for zmu must satistfy 0<=step_toplot<=M
@@ -177,13 +169,10 @@ char_toplot = ['t_peak','t_r','t_d']
 energy_char_toplot= [110]
 #which plots to plots
 #plots_toplot = ['injection','diffusion coef','zmu','z and mu','electron flux','plot_omni_characteristic','plot_WIND_all_energy_comparison']
-#plots_toplot = ['plot_one_omni_characteristic','plot_all_omni_characteristic','plot_WIND_one_energy_comparison']
-#plots_toplot = ['plot_one_omni_characteristic','plot_all_omni_characteristic','plot_WIND_one_energy_comparison']
-#plots_toplot = ['plot_all_simulations_one_energy','plot_WIND_one_energy_comparison']
-#plots_toplot = ['plot_all_simulations_one_energy','plot_all_omni_characteristic',]
-#plots_toplot = ['plot_all_omni_characteristic','plot_all_simulations_one_energy','plot_WIND_one_energy_comparison']
-plots_toplot = ['plot_WIND_one_energy_comparison','plot_all_simulations_one_energy','plot_all_omni_characteristic']
-#plots_toplot=['plot_WIND_one_energy_comparison']
+
+
+#plots_toplot = ['plot_all_simulations_one_energy','plot_WIND_one_energy_comparison','plot_all_omni_characteristic']
+plots_toplot =['diffusion coef','plot_omni_characteristics_imb_comparison','plot_WIND_one_energy_imb_comparison']
 
 
 #raise a Warning if...
@@ -231,13 +220,13 @@ window_size = 250
 #actually, no just do that. below is the max frequency (kHz)
 inj_max_freq = 10000
 #threshold flux to gauge the t_o and t_d ect. (fraction of normalise peak (1))
-thresh = 0.5
+thresh = 1/2.71
 #fit any (can be t_o,t_d,HWHM_premax,HWHM_postmax) or all
 fit_chars = ['t_peak[s]']
 #break energy [keV] used in plotting
 break_energy = 45
 #explicit energies to consider in the fitting
-fit_energies=[110]
+fit_energies=[67]
 ####
 
 '''
@@ -313,8 +302,8 @@ sort_dict=funcs.build_dict(sorting_variables_labels,sorting_variables)
 
 
 #ccreating the plotting dictionary
-plotting_variables_labels=['mfp_toplot[AU]','alpha_toplot','energy_toplot[keV]','step_toplot','plots_toplot','analytical_toplot','plot_analytical','kappa_toplot','char_toplot','energy_char_toplot']
-plotting_variables=[mfp_toplot,alpha_toplot,energy_toplot,step_toplot,plots_toplot,analytical_toplot,plot_analytical,kappa_toplot,char_toplot,energy_char_toplot]
+plotting_variables_labels=['mfp_toplot[AU]','alpha_toplot','energy_toplot[keV]','step_toplot','plots_toplot','analytical_toplot','plot_analytical','kappa_toplot','char_toplot','energy_char_toplot','mfp_comp_toplot[AU]']
+plotting_variables=[mfp_toplot,alpha_toplot,energy_toplot,step_toplot,plots_toplot,analytical_toplot,plot_analytical,kappa_toplot,char_toplot,energy_char_toplot,mfp_comp_toplot]
 plot_dict = funcs.build_dict(plotting_variables_labels,plotting_variables)
 
 

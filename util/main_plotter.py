@@ -46,8 +46,8 @@ class plot_functions:
         self.path_util = os.path.dirname(os.path.realpath(__file__))
         
         #global figure parameters
-        self.fsize_head=15
-        self.fsize_ticks=10
+        self.fsize_head=20
+        self.fsize_ticks=20
         self.cmap1=plt.get_cmap("Set1")
         self.props=dict(boxstyle='round', facecolor='white', alpha=0.1)
         
@@ -93,6 +93,7 @@ class plot_functions:
         
         #load in the data path
         self.data_path = funcs.folder_functions().return_datapath()
+        self.figure_path=funcs.return_figurepath()
         
     def return_file_dict(self):
         #file_dict will hold which files are necessary to load for each figure
@@ -101,7 +102,9 @@ class plot_functions:
         file_dict['diffusion coef']=['mu_toplot_','D_mumu_toplot_']
         file_dict['zmu']=['z_normbeds_','mu_beds_','hist2D_']
         file_dict['z and mu']=['mu_beds_','h_mu_','ers_mu_','z_beds_','h_z_','ers_z_']
+        file_dict['just z']=['mu_beds_','h_mu_','ers_mu_','z_beds_','h_z_','ers_z_']
         file_dict['electron flux']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','mu_beds_pads_','pads_','bal_arrival_times_']
+        file_dict['electron flux no pad']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','mu_beds_pads_','pads_','bal_arrival_times_']
         file_dict['plot_WIND_one_energy_comparison']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','ang_beds_pads_','pads_','bal_arrival_times_','t_bins_inj_']
         file_dict['plot_WIND_one_energy_imb_comparison']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','ang_beds_pads_','pads_','bal_arrival_times_','t_bins_inj_']
         file_dict['sampled_times[days]'] = ['sampled_ts_']
@@ -177,7 +180,7 @@ class plot_functions:
         str_mfp_p_imbalanced = "$\lambda_{\parallel, \oplus}^{+}$"+'='+str(self.mfp_comp_toplot[1,1])+' [AU]'
         str_alpha = "$\\alpha$"+'='+str(self.alpha_toplot)
         str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
-        str_t = "$t_{s}$="+str(t_samp)+" [minutes] "
+        str_t = "$t$="+str(t_samp)+" [minutes] "
         str_z_obs = "$z_{obs}$="+str(self.z_obs)+" [AU] "
         str_kappa="$\kappa=$"+str(self.kappa)
         #str_z_tol = "$z_{tol}$="+str(z_tol_toplot)+" [AU] "
@@ -204,9 +207,10 @@ class plot_functions:
         ax.set_ylabel('Injection Rate',fontsize=self.fsize_head)
         ax.xaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax.yaxis.set_tick_params(labelsize=self.fsize_ticks)
-        ax.set_xlabel('Time Elapsed [hrs]',fontsize=self.fsize_head)
+        #ax.set_xlabel('Time Elapsed [Minutes]',fontsize=self.fsize_head)
+        ax.tick_params(labelbottom=False)
         
-        ax.plot(t_inj,inj_function,color=self.cmap1(0))
+        ax.plot(t_inj,inj_function)
         
         str_energy=string_dict['energy_toplot[keV]']
         plt.show(block=False)
@@ -236,12 +240,17 @@ class plot_functions:
         
         #fix the normalisation!
         fig,ax=plt.subplots(1,figsize=(10,5))
-        ax.set_xlabel('z/($v_{E}t_{s}}$)',fontsize=self.fsize_head)
-        ax.set_ylabel('Pitch Angle Cosine $\mu=\cos(\\theta)$',fontsize=self.fsize_head)
+        ax.set_xlabel('z/($v(E)t}$)',fontsize=self.fsize_head)
+        ax.set_ylabel('$\mu=\cos(\\theta)$',fontsize=self.fsize_head)
         ax.xaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax.yaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax.axhline(y=0,color='white',linestyle='--')
-        im=ax.pcolormesh(z_normbeds, mu_beds, H2D_toplot.T, cmap='viridis',vmin=0,vmax=np.max(H2D_toplot))
+        #im=ax.pcolormesh(z_normbeds, mu_beds, H2D_toplot.T, cmap='viridis',vmin=0,vmax=np.max(H2D_toplot))
+        norm=mcolors.SymLogNorm(linthresh=10e-3,vmin=10e-3,vmax=np.nanmax(H2D_toplot)+50e-1)
+        im=ax.pcolormesh(z_normbeds, mu_beds, H2D_toplot.T, cmap='viridis',norm=norm)
+        print(np.sum(H2D_toplot)*(z_normbeds[1]-z_normbeds[0])*(mu_beds[-1]-mu_beds[-2]))
+        raise SystemExit
+        
         cbar = fig.colorbar(im, ax=ax)
         cbar.ax.tick_params(labelsize=self.fsize_ticks)
         
@@ -290,7 +299,7 @@ class plot_functions:
    
         
         ax0.set_ylabel('Normalised Counts',fontsize=self.fsize_head)
-        ax0.set_xlabel('Pitch Angle Cosine $\mu = \cos (\\theta)$',fontsize=self.fsize_head)
+        ax0.set_xlabel('$\mu = \cos (\\theta)$',fontsize=self.fsize_head)
         ax0.xaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax0.yaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax0.yaxis.set_tick_params(labelsize=self.fsize_ticks)
@@ -368,6 +377,98 @@ class plot_functions:
         plt.show(block=False)
         plt.savefig(os.path.join(folder_path,'fig+z&mu_distributions_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
 
+    def plot_just_z(self,plot,string_dict,folder_path,sols):
+        #extracting the specific times for the given energy
+        sampled_ts=self.load_files_toplot('sampled_times[days]')[0]
+        #extracting the sampled times of a given energy
+        sampled_ts_toplot=sampled_ts[self.n_en]
+        
+        data_toplot=self.load_files_toplot(plot)
+        z_beds=data_toplot[3]
+        h_z=data_toplot[4][self.n_en]
+        ers_z=data_toplot[5][self.n_en]
+        
+        z_ers_n = h_z-ers_z
+        z_ers_p=h_z+ers_z
+    
+                
+        # setup the normalization and the colormap
+        normalize = mcolors.Normalize(vmin=sampled_ts_toplot.min(), vmax=sampled_ts_toplot.max()*1.5)
+        colormap = cm.plasma
+        
+        #creating the Figure
+        fig,ax = plt.subplots(1,figsize=(10,5))
+
+            
+        '''
+        plotting the z distributions
+        '''
+        
+        ax.set_ylabel('Normalised Counts',fontsize=self.fsize_head)
+        ax.set_xlabel('Distance [AU]',fontsize=self.fsize_head)
+        ax.xaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax.axvspan(xmin=self.z_obs-self.z_tol,xmax=self.z_obs+self.z_tol,color='lightpink')
+        
+        if self.plot_analytical==True:
+            #extracting the analytical_solutions
+            zar=sols[2]
+            sol_z=sols[3]
+            for samp in range(1,self.M):
+                ax.plot(zar,sol_z[samp],color='grey')
+            
+            
+        #creating the annotations on site, const is to scale the jumps to be plotted well
+        const=0.2
+        #size of jumps to make
+        size_jumps = int(np.round((len(z_beds)/self.M)))
+        z_loc_max = z_beds[::size_jumps]/const
+    
+            
+        for samp in range(1,self.M):
+            #pick the 4th largest bin to plot
+            z_max = sorted(h_z[samp])[-5]
+            t=sampled_ts_toplot[samp]
+            #ax.stairs(h_z[samp],z_beds,color=colormap(normalize(t)))
+            ax.step(z_beds[:-1],h_z[samp],where='post',color=colormap(normalize(t)))
+
+            z_ers_n_samp=np.insert(z_ers_n[samp],len(z_ers_n[samp]),z_ers_n[samp][-1])
+            z_ers_p_samp=np.insert(z_ers_p[samp],len(z_ers_p[samp]),z_ers_p[samp][-1])
+            ax.fill_between(z_beds, z_ers_n_samp, z_ers_p_samp,step='post', color='k', alpha=0.15)
+            #ax1.annotate(str_t,(z_loc_max[samp]+0.1,z_max),fontsize=15,color=colormap(normalize(t)))
+            str_t = "t="+'{:.2f}'.format(t*1440)+" [mins] "
+            #ax1.annotate(str_t,(0.1,np.max(h_z[1])-np.max(h_z[1])*samp/self.M),fontsize=15,color=colormap(normalize(t)))
+            #ax1.annotate(str_t,(0.4,z_max-const*samp*z_max),fontsize=15,color=colormap(normalize(t)))
+            ax.annotate(str_t,(0.65,0.9-samp*0.3/self.M),fontsize=self.fsize_ticks,color=colormap(normalize(t)),xycoords='figure fraction')
+            
+        
+
+        str_energy=string_dict['energy_toplot[keV]']
+        '''
+        str_mfp_n=string_dict['mfp-_toplot[AU]']
+        str_mfp_p=string_dict['mfp+_toplot[AU]']
+        str_alpha=string_dict['alpha_toplot']
+        str_kappa=string_dict['kappa']
+
+        str_ar = [str_energy,str_mfp_n,str_mfp_p,str_alpha,str_kappa]
+        
+        
+        if self.mfp_const==False:
+            for i,str in enumerate(str_ar):
+                ax1.annotate(str,(0.15,0.85-i*0.03),fontsize=15,xycoords='figure fraction')
+        if self.mfp_const==True:
+            for i,str in enumerate(str_ar):
+                if i<=2:
+                    ax1.annotate(str,(0.15,0.85-i*0.03),fontsize=15,xycoords='figure fraction')
+        '''
+                
+        #ax1.set_xlim(0,0.25)
+
+        plt.show(block=False)
+        plt.savefig(os.path.join(folder_path,'fig+z_distributions_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+
+        pass
+
     def plot_electron_flux(self,plot,string_dict,folder_path,sols):
         
         data_toplot=self.load_files_toplot(plot)
@@ -407,9 +508,9 @@ class plot_functions:
         ax1.yaxis.set_tick_params(labelsize=self.fsize_ticks)
         #ax1.set_xlabel('Time Since Injection [Minutes]',fontsize=fsize_head)
         ax1.tick_params(labelbottom=False)
-        ax1.set_ylabel('Pitch Angle Cosine $\mu=cos(\Theta)$',fontsize=self.fsize_head)
+        ax1.set_ylabel('$\mu=cos(\\theta)$',fontsize=self.fsize_head)
         str_mfp_formula=string_dict['mfp_formula']
-        ax1.set_title(str_mfp_formula,loc='right',fontsize=20,pad=20)
+        #ax1.set_title(str_mfp_formula,loc='right',fontsize=20,pad=20)
         ax1.axvline(x=bal_arrival_time,color='grey',linestyle='--')
         #need to repeat the final entry of t_bins since pcolormesh demands edges have +1 dimension to image values (verified correct in this case)
         #t_bins_minutes=np.insert(t_bins_minutes,len(t_bins_minutes),t_bins_minutes[-1])
@@ -417,6 +518,7 @@ class plot_functions:
         #ax1.imshow((t_bins_minutes,mu_beds_pads),pads.T)
         cbar = fig.colorbar(im, ax=ax3,location='left')
         cbar.ax.tick_params(labelsize=self.fsize_ticks)
+        cbar.ax.set_ylabel('Peak Normalised Flux', size=self.fsize_head)
 
         
         '''
@@ -453,21 +555,97 @@ class plot_functions:
         props = self.props
 
         
-        strs = [str_energy,str_mfp_n,str_mfp_p,str_z_obs,str_alpha,str_kappa]
+        #strs = [str_energy,str_mfp_n,str_mfp_p,str_z_obs,str_alpha,str_kappa]
+        strs = [str_energy,str_mfp_n,str_mfp_p]
         
-        for i in range(0,4):
+        for i in range(3):
             string=strs[i]
             ax2.annotate(string,(0.6,0.45-i*0.06),fontsize=15,xycoords='figure fraction')
-        
+        '''
         if self.mfp_const==False:
             for i in range(4,6):
                 string=strs[i]
                 ax2.annotate(string,(0.6,0.45-i*0.06),fontsize=15,xycoords='figure fraction')
-        
+        '''
         plt.show(block=False)
         plt.savefig(os.path.join(folder_path,'fig+electron_fluxes_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
         
+    def plot_electron_flux_no_pad(self,plot,string_dict,folder_path,sols):
         
+        data_toplot=self.load_files_toplot(plot)
+        t_bins_minutes=data_toplot[0]
+        omni_counts = data_toplot[1][self.n_en]
+        omni_counts_ers=data_toplot[2][self.n_en]
+        mu_beds_pads=data_toplot[3]
+        bal_arrival_time=data_toplot[5][self.n_en]
+        #sim_omni_chars = data_toplot[6][self.n_en]
+        #t_bins_inj=data_toplot[7]
+
+        '''
+        normalising to integrated area
+        '''
+
+        omni_norm=np.sum(omni_counts)*(t_bins_minutes[1]-t_bins_minutes[0])
+        omni_counts/=omni_norm
+        omni_counts_ers/=omni_norm
+
+        #creating the error bounds in mu and z
+        omni_ers_n = omni_counts-omni_counts_ers
+        omni_ers_p = omni_counts+omni_counts_ers
+        
+        
+        fig,ax = plt.subplots(1,figsize=(10,5))
+    
+
+        
+        '''
+        ax is for the omnidirectional intensities, ax4 is for plotting the parameters
+        '''
+        
+        ax.set_xlabel('Time Since Injection [Minutes]',fontsize=self.fsize_head)
+        ax.set_ylabel('Normalised Flux',fontsize=self.fsize_head)
+        ax.xaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax.axvline(x=bal_arrival_time,color='grey',linestyle='--')
+
+        
+        ax.stairs(omni_counts,t_bins_minutes)
+        #inserting a repeated last entry for pltoting purposes, so the plot knows to extend the last value
+        omni_ers_n=np.insert(omni_ers_n,len(omni_ers_n),omni_ers_n[-1])
+        omni_ers_p=np.insert(omni_ers_p,len(omni_ers_p),omni_ers_p[-1])
+        ax.fill_between(t_bins_minutes, omni_ers_n, omni_ers_p,step='post', color='k', alpha=0.15)
+
+        
+        if self.plot_analytical==True:
+            #extracting the required analytical_solutions to overlay
+            tar=sols[0]
+            sol_t=sols[1]
+
+            #normalising to integrate to one
+            sol_t[np.isnan(sol_t)]=0
+            sol_t_norm = np.trapz(sol_t,tar)
+            #print(sol_t_norm)
+            sol_t /= sol_t_norm
+
+            ax.plot(tar,sol_t,color='grey')
+        
+
+        str_energy=string_dict['energy_toplot[keV]']
+        str_mfp_n=string_dict['mfp-_toplot[AU]']
+        str_mfp_p=string_dict['mfp+_toplot[AU]']
+        
+        #strs = [str_energy,str_mfp_n,str_mfp_p,str_z_obs,str_alpha,str_kappa]
+        strs = [str_energy,str_mfp_n,str_mfp_p]
+        
+       
+       # for i in range(3):
+            #string=strs[i]
+            #ax.annotate(string,(0.6,0.8-i*0.06),fontsize=15,xycoords='figure fraction')
+
+        plt.show(block=False)
+        plt.savefig(os.path.join(folder_path,'fig+electron_fluxes_nopad_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+
+        pass
     #creates a folder to save the required figures, and information about the simulation.
     def create_folder(self):
         #the folder_name convention
@@ -1358,12 +1536,12 @@ class plot_functions:
 
                     str_mfp = '$\lambda_{\parallel}^{-}=\lambda_{\parallel}^{+}$='+str(var_tup[3])+' [AU]'
                     if var_tup[0]==self.kappa and var_tup[3]==self.mfp_toplot[1]:
-                        ax.annotate(str_mfp,xytext=(t_r-100,t_p+100),xy=(t_r,t_p),arrowprops=dict(arrowstyle='-|>'))
+                        ax.annotate(str_mfp,xytext=(t_r-200,t_p+100),xy=(t_r,t_p),arrowprops=dict(arrowstyle='-|>'))
 
 
             kappa = sim_vars[k,a,m,0,0]
             str_kappa = "$\kappa=$"+str(kappa)
-            ax.annotate(str_kappa, (0.1,0.9),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+            ax.annotate(str_kappa, (0.1,0.85),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
             #ax.errorbar(WIND_energies,event_omni_chars,yerr=event_omni_chars_uncertainty,color='black',marker='*',capsize=5)
             ax.set_xscale('log')
             #ax.set_yscale('log')
@@ -1381,10 +1559,12 @@ class plot_functions:
 
 
             plt.setp(ax.get_yminorticklabels(), visible=True)
+    
 
         '''
         Setting up the colorbar
         '''
+        
         #tricking matplotlib into making a colorbar using a ghost image
         fig_ghost, ax_ghost = plt.subplots(1,figsize=(7,7))
         #map_ghost = ax_ghost.imshow(np.array([[1,2],[1,2]]),cmap='viridis',norm=mcolors.LogNorm(vmin=t_p_min,vmax=t_p_max))
@@ -1396,27 +1576,11 @@ class plot_functions:
         cbar.set_label('$t_d$ / [$t_d$ (event)]',fontsize=self.fsize_head)
         cbar.ax.set_yticklabels(['0', '1', '>2'])
         
-
         plt.show(block=False)
+        str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
+        fig.savefig(os.path.join(self.figure_path,'fig+omni_characteristics_imb_comp_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
 
-        
-        #ax.plot(WIND_energies,sim_omni_chars,color='green')
-        #ax.plot(WIND_energies,event_omni_chars,color='black')
-
-        #cmap = plt.cm.nipy_spectral
-        #norm = mcolors.Normalize(vmin=0, vmax=multiplied_tup)   
-        #n=0
-        #for k in range(n_kappa):
-            #for alph in range(n_alpha):
-                #for p in range(n_pairs):
-                    #n=n+1
-                    #tup=sim_omni_chars[k,alph,p]
-        #for i,tup in enumerate(flat_sim_omni_chars):
-                    #ax.scatter(WIND_energies,tup,color=cmap(norm(n)),marker='.')
-                    #ax.plot(WIND_energies,tup,color=cmap(norm(n)))
-
-        
-        return None
+        pass
 
 
     '''
@@ -1551,7 +1715,7 @@ class plot_functions:
 
             str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
             #and another axis for the colorbar (to denote the mean free paths)
-            ax.annotate(str_kappa, (0.78,0.85),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+            ax.annotate(str_kappa, (0.78,0.75),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
 
 
             if n!=n_kappa-1:
@@ -1573,7 +1737,8 @@ class plot_functions:
             cmap = cm.get_cmap('rainbow', n_mfp)  
             ticks = np.array([0,1,2])
 
-            for m in range(n_mfp):
+            step=2
+            for m in range(0,n_mfp,step):
                 #plot the mean free paths
                 mfp_val = sim_vars[n,0,m,en_ind,2]
                 #mfp_val_p = sim_vars[n,0,m,en_ind,3]
@@ -1582,13 +1747,14 @@ class plot_functions:
                 color_sim=cmap(m)
                 omni_counts = omni_counts_data_overkappa[n,0,m,en_ind]
                 ax.stairs(omni_counts,t_bins_inj,color=color_sim,linestyle='--')
+                ax.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
                 
                 if n==n_kappa-2:
-                    ax.annotate(str_mfp, (1.05,0.85-0.3*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
+                    ax.annotate(str_mfp, (1.02,1.0-(0.4/step)*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
                     #ax.annotate(str_mfp_n, (1.15,0.85-0.3*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
 
             if n==n_kappa-2:
-                ax.annotate(str_energy, (1.05,0.85-0.3*n_mfp),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+                ax.annotate(str_energy, (1.02,1.0-(0.4/step)*(n_mfp+1)),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
 
             
             if n==n_kappa-1:
@@ -1596,7 +1762,7 @@ class plot_functions:
 
 
         plt.show(block=False)
-        plt.savefig(os.path.join(folder_path,'fig+all_simulations_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+        plt.savefig(os.path.join(self.figure_path,'fig+all_simulations_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
         pass
 
     def plot_WIND_one_energy_imb_comparison(self,plot,string_dict,folder_path):
@@ -1837,8 +2003,7 @@ class plot_functions:
         '''
         stacked omnidirectional plot
         ''' 
-        
-    
+
         #simulated wind omni data + poisson errors
         ax6.stairs(omni_counts,t_bins_inj,color='black')
         ax6.stairs(omni_counts_comp,t_bins_inj_comp,color='lightgrey',fill=True,edgecolor='black')
@@ -1913,8 +2078,9 @@ class plot_functions:
         ax4.set_xlim(waves_times[0],pads_times[-1])
         
         plt.show(block=False)
-        
-        plt.savefig(os.path.join(folder_path,'fig+one_energy_comparison_imb_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+
+        str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
+        plt.savefig(os.path.join(self.figure_path,'fig+one_energy_comparison_imb_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
 
         pass
     
@@ -2050,6 +2216,8 @@ class plot_functions:
         ax_main.annotate(str_mfp_imbalanced_p,xytext=(t_r_imbalanced+50,t_p_imbalanced+15),xy=(t_r_imbalanced,t_p_imbalanced),arrowprops=dict(arrowstyle='-|>'))
 
         plt.show(block=False)
+        str_energy = "E="+str(self.energy_toplot)+'keV'
+        fig.savefig(os.path.join(self.figure_path,'fig+omni_characteristics_comparison_imb_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
 
 
         pass
@@ -2072,9 +2240,12 @@ class plot_functions:
                 
             if plot=='z and mu':
                 self.plot_z_and_mu(plot,string_dict,folder_path,sols)
-                
+            if plot =='just z':
+                self.plot_just_z(plot,string_dict,folder_path,sols)
             if plot=='electron flux':
                 self.plot_electron_flux(plot,string_dict,folder_path,sols)
+            if plot=='electron flux no pad':
+                self.plot_electron_flux_no_pad(plot,string_dict,folder_path,sols)
            #if plot=='plot_event':
                 #self.plot_event()
             if plot=='plot_WIND_electrons_test':
@@ -2098,6 +2269,7 @@ class plot_functions:
                 self.plot_WIND_one_energy_imb_comparison(plot,string_dict,folder_path) 
             if plot=='plot_omni_characteristics_imb_comparison':
                 self.plot_omni_characteristics_imb_comparison(plot,string_dict,folder_path)
+
         return 
     
 

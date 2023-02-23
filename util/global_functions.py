@@ -60,8 +60,12 @@ class folder_functions:
 
 
 def return_datapath():
-    return r'\\Users\\jcfit\Desktop\Summer Research\\Transport Modelling\\Electron Transport Modelling\\Numerical Modelling Scripts\data'
+    util_path = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(util_path,"data")
 
+def return_figurepath():
+    util_path = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(util_path,"transport_simulation_figures")
 '''
 class to organise the simulation input paramaters
 '''

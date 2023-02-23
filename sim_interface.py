@@ -3,14 +3,14 @@
 Created on Thu Nov 10 13:44:07 2022
 
 @author: jcfit
+
+TO RESOLVE:
+-for analytical comparisons, change from peak normalising to area normalising ! (temporary fix, plotting 'just z' performs area normalisation
+internal within the plotting function.)
+
 """
 '''
-importing general numpy functions
-
--recall, to add a new function in user requests, need to add it to funcs_dict!
-
-- include error handling for time-profile bin width must be larger than the timestep
--energy to plot must be in the simulated energies dictionary? fix this
+importing various packages
 '''
 
 import numpy as np
@@ -74,7 +74,7 @@ from util.event_fit_WIND import fit_WIND_event
 
 
 '''
-Input parameters here5
+Input parameters here
 
 Simulation is currently vectorised over alpha, mean free path pairs and energy
 '''
@@ -82,32 +82,32 @@ Simulation is currently vectorised over alpha, mean free path pairs and energy
 #if sim_zmu is large, loading can take time, set to False and Pass to skip this.
 load_existing_sim_zmu = False
 # Defining the number of test particles in thde simulation
-Np=10000
+Np=40000
 #choose the alpha_values (vectorised) NO ENERGY DEPENDENCE FOR CONSIDERATION OF ONE ENERGY
 alpha_vals = [0.0]
 #choosing kappa (non-vectorised, must be a scalar)
-kappa=1.0
+kappa=0.0
 #first entries are \lamda- second entry is \lamda+. Holds mfp0 as in the attached document
-#mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5]]
-mfp0_vals = [[30.0,1.75],[1.75,1.75]]
-
+#mfp0_vals = [[1.0,1.0],[1.25,1.25],[1.5,1.5],[1.75,1.75],[2.0,2.0],[2.25,2.25],[2.5,2.5],[2.75,2.75],[3.0,3.0],[3.25,3.25],[3.5,3.5]]
+#mfp0_vals = [[30.0,1.25],[1.25,1.25]]
+mfp0_vals = [[0.0005,0.05]]
 
 ## what electron energies to consider (in keV) (vectorised)res
 #CONSTRAINT: must be a member of [27,40,67,110,180,310,520] 
 #ee=[67,110]
 #ee=[67,110,180]
-ee = [110]
+ee = [27]
 #value of h
-h_val=0.005
+h_val=0.0
 #end time [d]s
-t_end=1.5/24
+t_end=0.1/24
 #start injection at t=0 [d], end injection at t2 [d]
 #select from options of injection duration
 inj_options = ['instantaneous','constant','custom']
 inj_set=inj_options[0]
 
 #if custom will use custom end time as specified below (must be less than t_end)
-custom_end = t_end/2
+custom_end = t_end
 
 #setting injection distance [AU]
 z_init = 0.05
@@ -116,7 +116,7 @@ z_init = 0.05
 #isotropic+ is uniform ove
 mu_IC_options = ['uniform+','uniform+-','forward_beamed']
 #choose from above options
-mu_IC_set = mu_IC_options[2]
+mu_IC_set = mu_IC_options[0]
 
 #form of D_mumu
 D_mumu_options = ['constant','isotropic','quasilinear']
@@ -124,9 +124,9 @@ D_mumu_options = ['constant','isotropic','quasilinear']
 D_mumu_set = D_mumu_options[2]
 
 #whether the mean free path varies with energy/distance as in doc or constant (given by mfp_vals)
-mfp_const = False
+mfp_const = True
 #whether we will consider adiabatic focusing in the stochastic recursions
-consider_focusing = True
+consider_focusing = False
 
 '''
 Input variables for sorting
@@ -135,12 +135,12 @@ Input variables for sorting
 #number of samples to take (equidistant in time, but not necessarily equal across energy channels (since timeteps are different))
 M = 4
 #position of observation to sample the electron fluxes
-z_obs = 1.2
-z_tol=0.015
+z_obs = 0.1
+z_tol=0.0005
 #time bin widths for the electron fluxes (in seconds, must be larger than the timestep!)
-t_binwidth = 60
+t_binwidth = 10
 #ADD z_beds to here! min and max bin edges to plot in the z and mu plots [zmin,zmax,spacing]
-z_beds = np.linspace(0.04,3.0,150)
+z_beds = np.linspace(z_init-0.0,z_init+0.2,100)
 #z_beds = np.linspace(1.0,2.0,150)
 
 
@@ -152,27 +152,31 @@ Input variables to plot
 ###-###
 
 #mean free path
-mfp_toplot=[30.0,1.75]
+mfp_toplot=[0.0005,0.05]
 #use the imbalanced case here for the comparisons (first element is the symmetric, second is the asymmetric )
-mfp_comp_toplot = [[1.75,1.75],[30.0,1.75]]
+mfp_comp_toplot = [[10.0,10.0],[10.0,10.0]]
 #alpha valu
 alpha_toplot =0.0
 #appa value to
-kappa_toplot=1.0
+kappa_toplot=0.0
 #which energy channel (keV)\
-energy_toplot = 110
+energy_toplot = 27
 #step to plot for zmu must satistfy 0<=step_toplot<=M
-step_toplot=1
+step_toplot=-1
 #choice between 't_o,t_d,HWHM_premax, HWHM_postmax'
 char_toplot = ['t_peak','t_r','t_d']
 #choose which energies to plot for the omnidirectional characteristics!
-energy_char_toplot= [110]
+energy_char_toplot= [27,40,110]
 #which plots to plots
 #plots_toplot = ['injection','diffusion coef','zmu','z and mu','electron flux','plot_omni_characteristic','plot_WIND_all_energy_comparison']
 
-
 #plots_toplot = ['plot_all_simulations_one_energy','plot_WIND_one_energy_comparison','plot_all_omni_characteristic']
-plots_toplot =['diffusion coef','plot_omni_characteristics_imb_comparison','plot_WIND_one_energy_imb_comparison']
+#plots_toplot =['diffusion coef','plot_omni_characteristics_imb_comparison','plot_WIND_one_energy_imb_comparison']
+#plots_toplot=['plot_omni_characteristics_imb_comparison']
+
+#plots_toplot=['electron flux no pad','just z','z and mu','zmu']
+plots_toplot = ['zmu']
+#plots_toplot=['electron flux no pad']
 
 
 #raise a Warning if...
@@ -183,7 +187,7 @@ if mfp_toplot not in mfp0_vals:
 
 #choose between SDII SDCI FRAN 
 analytical_toplot='FRAN'
-plot_analytical=False
+plot_analytical=True
 
 
 '''

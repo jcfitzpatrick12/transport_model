@@ -169,9 +169,9 @@ def find_index_1D(ar,val):
     #take the absolute magnitude of ar
     ar=np.abs(ar)
     try:
-        return np.where(ar==np.nanmin(ar))[0][0]
+        return np.where(ar==np.nanmin(ar))[0][-1]
     except:
-        return (np.where(ar==np.nanmin(ar))[0])
+        (np.where(ar==np.nanmin(ar))[0])
     
 
 #returns the time in minutes for light to travel 1AU

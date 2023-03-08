@@ -67,7 +67,15 @@ class sort_WIND_data:
             #seperate these into intersections pre and post the maximum
             #converting these indices to times (first premax then postmax)
             return [omni_times[indx_minimum],omni_times[indx_maximum]],(omni_times[indx_maximum]-omni_times[indx_minimum]).total_seconds()
-    '''      
+    '''     
+    #numpy.diff for datetime arrays
+    def max_diff_datetime(self,dt_ar): 
+        diffs_sec=[]
+        for i in range(len(dt_ar)-1):
+            diff=(dt_ar[i+1]-dt_ar[i]).total_seconds()
+            diffs_sec.append(diff)
+
+        return np.nanmax(diffs_sec)
         
     def charecterise_event_omni(self,inj_time):
         #extract the omnidirectional intensities and the omnidirectional fluxes
@@ -76,7 +84,8 @@ class sort_WIND_data:
         omni_fluxes_smoothed = self.event_data.omni_fluxes_smoothed
         
         #finding approximate time resolution
-        t_res = (omni_times[30]-omni_times[29]).total_seconds()
+        #diff = np.diff(omni_times)
+        t_res = self.max_diff_datetime(omni_times)
 
 
         
@@ -101,6 +110,7 @@ class sort_WIND_data:
             #extract the nth omnidirectional fluxes
             fluxs = omni_fluxes[n]
             fluxs_smoothed=omni_fluxes_smoothed[n]
+
             
             #converting the times to floats
             #t = funcs.datetime_to_float(omni_times)
@@ -168,40 +178,59 @@ class sort_WIND_data:
             
             
             if self.validate_omni_chars==True:
-                fig,ax=plt.subplots(1,figsize=(7,7))
+                fig,ax=plt.subplots(1,figsize=(12,6))
                 WIND_energies = self.event_data.energies
                 color=plt.cm.Dark2(n)
+                fsize=20
                 if self.validate_omni_chars==True:
-                    ax.plot(omni_times,fluxs,color=color)
-                    ax.plot(omni_times,fluxs_smoothed,color='black')
-                    ax.axvline(t_r_datetime,color='blue',linestyle='--')
-                    ax.axvline(x=t_max,color='red',linestyle='--')
-                    ax.axhline(y=thresh_flux,color='grey',linestyle='--')
-                    ax.axvline(x=t_d_datetime,color='green',linestyle='--')
-                    ax.axvline(x=inj_time,color='grey',linestyle='--')
+                    ax.step(omni_times,fluxs,color='black',where='post')
+                    #ax.plot(omni_times,fluxs_smoothed,color='grey')
+                    ax.axvline(t_r_datetime,color='orange',linestyle='--')
+                    ax.axvline(x=t_max,color='orange',linestyle='--')
+                    #ax.axhline(y=thresh_flux,color='red',linestyle='--')
+                    ax.axvline(x=t_d_datetime,color='orange',linestyle='--')
+                    ax.axvline(x=inj_time,color='black',linestyle='--')
                     #ax.axvspan(xmin=intersections_premax[0],xmax=intersections_premax[1],color='lightgrey')
                     #ax.axvspan(xmin=intersections_postmax[0],xmax=intersections_postmax[1],color='lightgrey')
                     #ax.axvspan(xmin=intersections_max[0],xmax=intersections_max[1],color='lightpink')
-                    ax.axhline(y=0.5,linestyle='--',color='grey')
+                    ax.axhline(y=thresh_flux,linestyle='--',color='grey')
                     ax.axhline(y=1.0,linestyle='--',color='grey')
                     str_energy=str(WIND_energies[n])+'keV'
-                    ax.annotate(str_energy, (0.75,0.7),xycoords='axes fraction',fontsize=10,color=color)
+                    #ax.annotate('WIND', (0.8,0.8),xycoords='axes fraction',fontsize=15,color=color)
+                    #ax.annotate('str_energy', (0.8,0.8),xycoords='axes fraction',fontsize=10,color=color)
+
                     
+                    #Special annotations for dissertation figure
+
+                    ax.annotate('', xy=(0.085, 1.05), xytext=(0.42, 1.05),arrowprops=dict(arrowstyle='<->', color='black'),xycoords='axes fraction')
+                    ax.annotate('$t_{p}$',(0.23,1.075),xycoords='axes fraction',fontsize=fsize,color='black')
+
+                    ax.annotate('', xy=(0.38, 1.07), xytext=(0.42, 1.07),arrowprops=dict(arrowstyle='<->', color='black'),xycoords='axes fraction')
+                    ax.annotate('$t_{r}$',(0.387,1.095),xycoords='axes fraction',fontsize=fsize,color='black')
+
+                    ax.annotate('', xy=(0.4205, 1.07), xytext=(0.49, 1.07),arrowprops=dict(arrowstyle='<->', color='black'),xycoords='axes fraction')
+                    ax.annotate('$t_{d}$',(0.44,1.095),xycoords='axes fraction',fontsize=fsize,color='black')
+                    
+                    
+
+
                     '''
                     formatting
                     '''
                     
+                    
+                    
                     ax.tick_params(labelbottom=True)
-                    ax.xaxis.set_tick_params(labelsize=10)
-                    ax.set_xlabel('UT Time',fontsize=15)
-                    ax.set_ylabel('Normalised Flux', fontsize=15)
+                    ax.xaxis.set_tick_params(labelsize=fsize)
+                    ax.yaxis.set_tick_params(labelsize=fsize)
+                    ax.set_xlabel('UT Time ($t_{inj}$: '+str(inj_time)+')',fontsize=fsize)
+                    ax.set_ylabel('Normalised Flux', fontsize=fsize)
                     myFmt = mdates.DateFormatter('%H%M')
                     ax.xaxis.set_major_formatter(myFmt)
-                    plt.show(block=True)
+                    plt.show(block=False)
                     #saving the event_chars_dict!
                     figure_path = r'\Users\jcfit\Desktop\Transport Modelling\Electron Transport Modelling\Numerical Modelling Scripts\transport_model\util\transport_simulation_figures'
-                    #plt.savefig(os.path.join(figure_path,'fig+all_test_figures+'+str(n)+'_.pdf'),format='pdf',bbox_inches='tight')
-
+                    plt.savefig(os.path.join(figure_path,'fig+all_test_figures+'+str(n)+'_.pdf'),format='pdf',bbox_inches='tight')
             #placing the time profile data in a dictionary
             #t_o and t_d are defined for seconds after injection
             energy_chars_dict['t_peak[s]']=t_peak
@@ -220,7 +249,7 @@ class sort_WIND_data:
     
 
      
-
+        #raise SystemExit
         #saving the event_chars_dict!
         data_path=funcs.folder_functions().return_datapath()
         #done!   

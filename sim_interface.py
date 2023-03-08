@@ -68,7 +68,6 @@ importing  WIND functions
 from util.process_WIND import WIND_functions
 from util.event_class_WIND import WIND_events
 from util.sort_WIND import sort_WIND_data
-
 #loading in the event_fitting class
 from util.event_fit_WIND import fit_WIND_event
 
@@ -82,25 +81,29 @@ Simulation is currently vectorised over alpha, mean free path pairs and energy
 #if sim_zmu is large, loading can take time, set to False and Pass to skip this.
 load_existing_sim_zmu = False
 # Defining the number of test particles in thde simulation
-Np=40000
+Np=10000
 #choose the alpha_values (vectorised) NO ENERGY DEPENDENCE FOR CONSIDERATION OF ONE ENERGY
-alpha_vals = [0.0]
+alpha_vals = [0.0] 
 #choosing kappa (non-vectorised, must be a scalar)
-kappa=0.0
-#first entries are \lamda- second entry is \lamda+. Holds mfp0 as in the attached document
+kappa=2.0
+#first entres are \lamda- second entry is \lamda+. Holds mfp0 as in the attached document
 #mfp0_vals = [[1.0,1.0],[1.25,1.25],[1.5,1.5],[1.75,1.75],[2.0,2.0],[2.25,2.25],[2.5,2.5],[2.75,2.75],[3.0,3.0],[3.25,3.25],[3.5,3.5]]
-#mfp0_vals = [[30.0,1.25],[1.25,1.25]]
-mfp0_vals = [[0.0005,0.05]]
+#mfp0_vals = [[1.0,1.0],[1.5,1.5],[2.0,2.0],[2.5,2.5],[3.0,3.0],[3.5,3.5],[4.0,4.0],[4.5,4.5],[5.0,5.0],[5.5,5.5],[6.0,6.0],[6.5,6.5],[7.0,7.0],[7.5,7.5]]
+#mfp0_vals = [[0.25,1.0],[0.25,1.5],[0.25,2.0],[0.25,2.5],[0.25,3.0],[0.25,3.5],[0.25,4.0],[0.25,4.5],[0.25,5.0],[0.25,5.5],[0.25,6.0],[0.25,6.5],[0.25,7.0],[0.25,7.5]]
+#mfp0_vals = [[0.25,5.5],[5.5,5.5]]
+mfp0_vals = [[0.25,5.5],[5.5,5.5]]
+#mfp0_vals = [[1.0,1.0]]
 
+#mfp0_vals = [[0.25,7.75],[7.75,7.75]]
 ## what electron energies to consider (in keV) (vectorised)res
 #CONSTRAINT: must be a member of [27,40,67,110,180,310,520] 
-#ee=[67,110]
+ee=[67]
 #ee=[67,110,180]
-ee = [27]
+#ee = []
 #value of h
-h_val=0.0
+h_val=0.001
 #end time [d]s
-t_end=0.1/24
+t_end=1.5/24
 #start injection at t=0 [d], end injection at t2 [d]
 #select from options of injection duration
 inj_options = ['instantaneous','constant','custom']
@@ -116,7 +119,7 @@ z_init = 0.05
 #isotropic+ is uniform ove
 mu_IC_options = ['uniform+','uniform+-','forward_beamed']
 #choose from above options
-mu_IC_set = mu_IC_options[0]
+mu_IC_set = mu_IC_options[2]
 
 #form of D_mumu
 D_mumu_options = ['constant','isotropic','quasilinear']
@@ -124,23 +127,23 @@ D_mumu_options = ['constant','isotropic','quasilinear']
 D_mumu_set = D_mumu_options[2]
 
 #whether the mean free path varies with energy/distance as in doc or constant (given by mfp_vals)
-mfp_const = True
+mfp_const = False
 #whether we will consider adiabatic focusing in the stochastic recursions
-consider_focusing = False
+consider_focusing = True
 
 '''
 Input variables for sorting
 '''
-    
+
 #number of samples to take (equidistant in time, but not necessarily equal across energy channels (since timeteps are different))
 M = 4
 #position of observation to sample the electron fluxes
-z_obs = 0.1
-z_tol=0.0005
+z_obs = 1.2
+z_tol=0.015
 #time bin widths for the electron fluxes (in seconds, must be larger than the timestep!)
-t_binwidth = 10
+t_binwidth = 85
 #ADD z_beds to here! min and max bin edges to plot in the z and mu plots [zmin,zmax,spacing]
-z_beds = np.linspace(z_init-0.0,z_init+0.2,100)
+z_beds = np.linspace(z_init-0.0,z_init+1.5,150)
 #z_beds = np.linspace(1.0,2.0,150)
 
 
@@ -152,30 +155,34 @@ Input variables to plot
 ###-###
 
 #mean free path
-mfp_toplot=[0.0005,0.05]
+#mfp_toplot=[2.75,2.75]
+mfp_toplot = [5.5,5.5]
 #use the imbalanced case here for the comparisons (first element is the symmetric, second is the asymmetric )
-mfp_comp_toplot = [[10.0,10.0],[10.0,10.0]]
+mfp_comp_toplot = [[5.5,5.5],[0.25,5.5]]
 #alpha valu
 alpha_toplot =0.0
-#appa value to
-kappa_toplot=0.0
+#kappa value to plot
+kappa_toplot=kappa
 #which energy channel (keV)\
-energy_toplot = 27
+energy_toplot = 67
 #step to plot for zmu must satistfy 0<=step_toplot<=M
 step_toplot=-1
 #choice between 't_o,t_d,HWHM_premax, HWHM_postmax'
 char_toplot = ['t_peak','t_r','t_d']
 #choose which energies to plot for the omnidirectional characteristics!
-energy_char_toplot= [27,40,110]
+energy_char_toplot= [67]
 #which plots to plots
 #plots_toplot = ['injection','diffusion coef','zmu','z and mu','electron flux','plot_omni_characteristic','plot_WIND_all_energy_comparison']
 
-#plots_toplot = ['plot_all_simulations_one_energy','plot_WIND_one_energy_comparison','plot_all_omni_characteristic']
-#plots_toplot =['diffusion coef','plot_omni_characteristics_imb_comparison','plot_WIND_one_energy_imb_comparison']
+#plots_toplot=['plot_all_simulations_one_energy']
+#plots_toplot=['diffusion coef']
+#plots_toplot = ['plot_all_omni_characteristic','plot_all_simulations_one_energy','plot_all_simulations_one_energy_diss']
+#plots_toplot=['plot_all_omni_characteristic']
+#plots_toplot =['plot_omni_characteristics_imb_comparison','plot_WIND_one_energy_imb_comparison_diss','plot_WIND_one_energy_imb_comparison','zmu']
+plots_toplot=['plot_WIND_one_energy_imb_comparison','plot_omni_characteristics_imb_comparison']
 #plots_toplot=['plot_omni_characteristics_imb_comparison']
-
+#plots_toplot=['plot_WIND_one_energy_comparison']
 #plots_toplot=['electron flux no pad','just z','z and mu','zmu']
-plots_toplot = ['zmu']
 #plots_toplot=['electron flux no pad']
 
 
@@ -187,7 +194,7 @@ if mfp_toplot not in mfp0_vals:
 
 #choose between SDII SDCI FRAN 
 analytical_toplot='FRAN'
-plot_analytical=True
+plot_analytical=False
 
 
 '''
@@ -199,9 +206,8 @@ event analysis parameters
 
 #event to analyse YYYY-mm-dd[a/b/c...]
 #which event are we consdering
-
-#event_considering = '1998-08-29'
-event_considering='1998-08-29'
+event_considering = '1998-08-29'
+#event_considering='2002-10-20'
 #manual_injection_override
 inj_manual_override = False
 #inj_time = datetime(year=2002,month=12,day=12,hour=0,minute=43)-timedelta(minutes=radio_travel_time_minutes)
@@ -215,8 +221,10 @@ validate_omni_chars = False
 #event_energy_toplot=180
 event_energy_toplot=energy_toplot
 #how long to evaluate the background? (minutes)
-t_evaluate_background = 20
+t_evaluate_background = 15
 #what is the window size for the data smoothing?
+#Smooth the wind data?
+smooth_WIND=False
 #input in seconds, will convert to number of data points in the code.
 window_size = 250
 #find the injection time, just set as time of max in WAVES/RAD2 higher frequencies
@@ -224,7 +232,7 @@ window_size = 250
 #actually, no just do that. below is the max frequency (kHz)
 inj_max_freq = 10000
 #threshold flux to gauge the t_o and t_d ect. (fraction of normalise peak (1))
-thresh = 1/2.71
+thresh = 1/2.718
 #fit any (can be t_o,t_d,HWHM_premax,HWHM_postmax) or all
 fit_chars = ['t_peak[s]']
 #break energy [keV] used in plotting
@@ -253,6 +261,10 @@ events_cdf['1998-08-29']=[[datetime(year=1998,month=8,day=29,hour=18,minute=15),
 events_cdf['2004-03-16']=[[datetime(year=2004,month=3,day=16,hour=8),datetime(year=2004,month=3,day=16,hour=11)],'wi_sfsp_3dp_20040316_v01.cdf','wi_sfpd_3dp_20040316_v02.cdf','wi_h1_wav_20040316_v01.cdf',180]
 #nitta 2006
 events_cdf['2000-03-07']=[[datetime(year=2000,month=3,day=7,hour=21,minute=30),datetime(year=2000,month=3,day=7,hour=23,minute=25)],'wi_sfsp_3dp_20000307_v01.cdf','wi_sfpd_3dp_20000307_v02.cdf','wi_h1_wav_20000307_v01.cdf',0]
+#possible asymmetric event
+events_cdf['2002-04-25']=[[datetime(year=2002,month=4,day=25,hour=5,minute=30),datetime(year=2002,month=4,day=25,hour=9,minute=30)],'wi_sfsp_3dp_20020425_v01.cdf','wi_sfpd_3dp_20020425_v02.cdf','wi_h1_wav_20020425_v01.cdf',0]
+#possible asymmetric event
+events_cdf['2002-08-19']=[[datetime(year=2002,month=8,day=19,hour=20,minute=45),datetime(year=2002,month=8,day=19,hour=23,minute=00)],'wi_sfsp_3dp_20020819_v01.cdf','wi_sfpd_3dp_20020819_v02.cdf','wi_h1_wav_20020819_v01.cdf',0]
 
 
 #Droge-like events (lower profile widths at higher energies difficult to concile with simulations)
@@ -265,7 +277,7 @@ events_cdf['2002-10-20_b']=[[datetime(year=2002,month=10,day=20,hour=11, minute=
 #ballistic
 events_cdf['2005-05-16']=[[datetime(year=2005,month=5,day=16,hour=2, minute=30),datetime(year=2005,month=5,day=16,hour=4)],'wi_sfsp_3dp_20050516_v01.cdf','wi_sfpd_3dp_20050516_v02.cdf','wi_h1_wav_20050516_v01.cdf',180]
 #symmetric scattering
-events_cdf['2003-09-30']=[[datetime(year=2003,month=9,day=30,hour=8),datetime(year=2003,month=9,day=30,hour=11,minute=30)],'wi_sfsp_3dp_20030930_v01.cdf','wi_sfpd_3dp_20030930_v02.cdf','wi_h1_wav_20030930_v01.cdf',0]
+events_cdf['2003-09-30']=[[datetime(year=2003,month=9,day=30,hour=8),datetime(year=2003,month=9,day=30,hour=11,minute=30)],'wi_sfsp_3dp_20030930_v01.cdf','wi_sfpd_3dp_20030930_v02.cdf','wi_h1_wav_20030930_v01.cdf',180]
 
 #bad data
 events_cdf['1999-03-21']=[[datetime(year=1999,month=3,day=21,hour=16),datetime(year=1999,month=3,day=21,hour=18,minute=30)],'wi_sfsp_3dp_19990321_v01.cdf','wi_sfpd_3dp_19990321_v02.cdf','wi_h1_wav_19990321_v01.cdf',0]
@@ -312,8 +324,8 @@ plot_dict = funcs.build_dict(plotting_variables_labels,plotting_variables)
 
 
 #creating the WIND information dictionary
-WIND_variables_labels=['event_considering','event_energy_toplot[keV]','t_evaluate_background[mins]','inj_max_freq[kHz]','thresh','fit_chars','break_energy[keV]','fit_energies[keV]','inj_manual_override','inj_manual_override_date','validate_omni_chars','window_size[s]']
-WIND_variables = [event_considering,event_energy_toplot,t_evaluate_background,inj_max_freq,thresh,fit_chars,break_energy,fit_energies,inj_manual_override,inj_manual_override_date,validate_omni_chars,window_size]
+WIND_variables_labels=['event_considering','event_energy_toplot[keV]','t_evaluate_background[mins]','inj_max_freq[kHz]','thresh','fit_chars','break_energy[keV]','fit_energies[keV]','inj_manual_override','inj_manual_override_date','validate_omni_chars','window_size[s]','smooth_WIND']
+WIND_variables = [event_considering,event_energy_toplot,t_evaluate_background,inj_max_freq,thresh,fit_chars,break_energy,fit_energies,inj_manual_override,inj_manual_override_date,validate_omni_chars,window_size,smooth_WIND]
 WIND_dict=funcs.build_dict(WIND_variables_labels,WIND_variables)
 
 

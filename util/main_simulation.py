@@ -425,6 +425,8 @@ class transport_functions:
         #finding the minimum timestep in seconds
         max_dt_seconds = np.max(dt_vals)*86400
         
+
+        #ignore for now
         if self.requested_t_binwidth<max_dt_seconds:
             raise SystemError('The maximum timesteps in seconds are: '+ str(max_dt_seconds)+' but the requested temporal resolution is: '+str(self.requested_t_binwidth)+'. Increase the requested temporal resolution! Timesteps are too large in some or all of the energies simulated.')
 

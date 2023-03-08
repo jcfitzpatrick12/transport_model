@@ -30,7 +30,7 @@ import os
 
 import matplotlib.dates as mdates
 
-from datetime import timedelta
+from datetime import timedelta,datetime
 import warnings
 
 
@@ -46,8 +46,8 @@ class plot_functions:
         self.path_util = os.path.dirname(os.path.realpath(__file__))
         
         #global figure parameters
-        self.fsize_head=20
-        self.fsize_ticks=20
+        self.fsize_head=15
+        self.fsize_ticks=15
         self.cmap1=plt.get_cmap("Set1")
         self.props=dict(boxstyle='round', facecolor='white', alpha=0.1)
         
@@ -90,6 +90,7 @@ class plot_functions:
 
         self.event_energy=self.WIND_dict['event_energy_toplot[keV]']
         self.break_energy = self.WIND_dict['break_energy[keV]']
+        self.smooth_WIND = self.WIND_dict['smooth_WIND']
         
         #load in the data path
         self.data_path = funcs.folder_functions().return_datapath()
@@ -107,11 +108,14 @@ class plot_functions:
         file_dict['electron flux no pad']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','mu_beds_pads_','pads_','bal_arrival_times_']
         file_dict['plot_WIND_one_energy_comparison']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','ang_beds_pads_','pads_','bal_arrival_times_','t_bins_inj_']
         file_dict['plot_WIND_one_energy_imb_comparison']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','ang_beds_pads_','pads_','bal_arrival_times_','t_bins_inj_']
+        file_dict['plot_WIND_one_energy_imb_comparison_diss']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','ang_beds_pads_','pads_','bal_arrival_times_','t_bins_inj_']
         file_dict['sampled_times[days]'] = ['sampled_ts_']
         file_dict['plot_WIND_all_energy_comparison']=['t_bins_minutes_','omni_counts_','omni_counts_ers_','bal_arrival_times_','sim_omni_chars_','t_bins_inj_']
         file_dict['plot_one_omni_characteristic'] = ['sim_omni_chars_']
         file_dict['plot_all_simulations_one_energy']= ['t_bins_inj_','bal_arrival_times_']
+        file_dict['plot_all_simulations_one_energy_diss']= ['t_bins_inj_','bal_arrival_times_']
         return file_dict
+    
         
     
     #function takes in files from the file dictionary defined within to plot
@@ -221,12 +225,12 @@ class plot_functions:
         mus=data_toplot[0]
         D_mumus=data_toplot[1]
         
-        fig, ax = plt.subplots(nrows=1, ncols=1,figsize=(10,5))     
-        ax.set_ylabel('$D_{\mu \mu}(\mu)$ / Speed [AU/day]',fontsize=self.fsize_head)
-        ax.xaxis.set_tick_params(labelsize=self.fsize_ticks)
-        ax.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        fig, ax = plt.subplots(nrows=1, ncols=1,figsize=(10,6))     
+        ax.set_ylabel('$D_{\mu \mu}(\mu)$ / Speed [AU/day]',fontsize=self.fsize_head*1.5)
+        ax.xaxis.set_tick_params(labelsize=self.fsize_head*1.5)
+        ax.yaxis.set_tick_params(labelsize=self.fsize_head*1.5)
         ax.axvline(x=0,linestyle='dashed',color='grey')
-        ax.set_xlabel('Pitch Angle Cosine $\mu=cos(\\theta)$',fontsize=self.fsize_head)
+        ax.set_xlabel('$\mu=cos(\\theta)$',fontsize=self.fsize_head*1.5)
         ax.plot(mus,D_mumus,color=self.cmap1(0))
         plt.show(block=False)
         plt.savefig(os.path.join(folder_path,'fig+diffusion_coefficient_.pdf'),format='pdf',bbox_inches='tight')
@@ -248,8 +252,6 @@ class plot_functions:
         #im=ax.pcolormesh(z_normbeds, mu_beds, H2D_toplot.T, cmap='viridis',vmin=0,vmax=np.max(H2D_toplot))
         norm=mcolors.SymLogNorm(linthresh=10e-3,vmin=10e-3,vmax=np.nanmax(H2D_toplot)+50e-1)
         im=ax.pcolormesh(z_normbeds, mu_beds, H2D_toplot.T, cmap='viridis',norm=norm)
-        print(np.sum(H2D_toplot)*(z_normbeds[1]-z_normbeds[0])*(mu_beds[-1]-mu_beds[-2]))
-        raise SystemExit
         
         cbar = fig.colorbar(im, ax=ax)
         cbar.ax.tick_params(labelsize=self.fsize_ticks)
@@ -947,7 +949,8 @@ class plot_functions:
             raise SystemError('Error choosing color')
         #WIND data
         ax5.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color=color_WIND)
-        ax5.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
+        if self.smooth_WIND==True:
+            ax5.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
 
         ax3.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
         ax4.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
@@ -977,7 +980,7 @@ class plot_functions:
         
         ax5.xaxis.set_tick_params(labelsize=self.fsize_ticks)
         ax5.yaxis.set_tick_params(labelsize=self.fsize_ticks)
-        ax5.set_xlabel('UT Time ($t_{inj}$:'+str(inj_time)+')',fontsize=self.fsize_head)
+        ax5.set_xlabel('UT Time ($t_{inj}$: '+str(inj_time)+')',fontsize=self.fsize_head)
         ax5.axvline(x=inj_time,color='green',linewidth=1.5,linestyle='dashed')
         
         #setting the xlim for neat plotting
@@ -1214,7 +1217,8 @@ class plot_functions:
             #WIND 
             color=plt.cm.Dark2(n)
             ax.step(WIND_omni_times,WIND_omni_en,where='post',label='WIND',color=color)
-            ax.plot(WIND_omni_times,WIND_omni_en_smoothed,color='grey')
+            if self.smooth_WIND==True:
+                ax.plot(WIND_omni_times,WIND_omni_en_smoothed,color='grey')
             
             #plot the bal_arrival_time
             ax.axvline(x=bal_arrival,color=color,linewidth=1.5,linestyle='dashed')
@@ -1478,8 +1482,9 @@ class plot_functions:
             wrs.append(1)
         wrs.append(0.1)
 
-        fig = plt.figure(figsize=(20,7))
+        fig = plt.figure(figsize=(30,5))
         gs = GridSpec(1, n_kappa+1, figure=fig,width_ratios=wrs,height_ratios=[1])
+        plt.subplots_adjust(wspace=0.25)
         #ax1 and ax2 will be the WIND/WAVES data
         
         #extracting the omnidirectional characteristics for the event
@@ -1517,6 +1522,8 @@ class plot_functions:
             ax= fig.add_subplot(gs[0, k])
             ax.scatter(t_r_event,t_p_event,c=1,marker='x',cmap=cmap,s=50,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
             ax.errorbar(t_r_event,t_p_event,xerr=t_r_event_unc,yerr=t_p_event_unc,color='grey',lw=0.2,capsize=2)
+            ax.axvline(x=t_r_event,linestyle='--',color='grey')
+            ax.axhline(y=t_p_event,linestyle='--',color='grey')
             for a in range(n_alpha):
                 for m in range(n_pairs):
                     #extracting the tuple of omnidirectional characteristics
@@ -1534,10 +1541,12 @@ class plot_functions:
                     ax.errorbar(t_r,t_p,xerr=self.t_binwidth,yerr=self.t_binwidth/2,color='grey',lw=0.2,capsize=2)
                     ## annotate the selected variable!
 
-                    str_mfp = '$\lambda_{\parallel}^{-}=\lambda_{\parallel}^{+}$='+str(var_tup[3])+' [AU]'
+                    str_mfp = '$\lambda_{\parallel,\oplus}^{-}=\lambda_{\parallel,\oplus}^{+}$='+str(var_tup[3])+' [AU]'
+                    '''
+                    #for annotating one of the points!
                     if var_tup[0]==self.kappa and var_tup[3]==self.mfp_toplot[1]:
-                        ax.annotate(str_mfp,xytext=(t_r-200,t_p+100),xy=(t_r,t_p),arrowprops=dict(arrowstyle='-|>'))
-
+                        ax.annotate(str_mfp,xytext=(t_r,t_p+100),xy=(t_r,t_p),arrowprops=dict(arrowstyle='-|>'))
+                    '''
 
             kappa = sim_vars[k,a,m,0,0]
             str_kappa = "$\kappa=$"+str(kappa)
@@ -1547,7 +1556,8 @@ class plot_functions:
             #ax.set_yscale('log')
             ax.set_xlim(10,1000)   
             #ax.set_ylim(1000,10000)
-            ax.set_ylim(t_p_min,t_p_max)   
+            #ax.set_ylim(t_p_min,t_p_max)   
+            ax.set_ylim(1000,3000)
 
             if k==0:
                 ax.set_ylabel('$t_p$ [s]',fontsize=self.fsize_head)
@@ -1584,7 +1594,7 @@ class plot_functions:
 
 
     '''
-    Adapt this to select the chosen energy out of multiply simulated energies?
+    Create a copy of this function with no annotations and 
     '''
     def plot_all_simulations_one_energy(self,plot,string_dict,folder_path):
         omni_counts_data_overkappa = self.build_omni_counts_over_kappa()
@@ -1648,7 +1658,7 @@ class plot_functions:
         for n in range(2+n_kappa):
             hrs.append(1)
         #fig = plt.figure(constrained_layout=True,figsize=(25,15))
-        fig = plt.figure(figsize=(15,15))
+        fig = plt.figure(figsize=(15,20))
         gs = GridSpec(2+n_kappa, 2, figure=fig,width_ratios=[1,0.14], height_ratios=hrs,)
         #ax1 and ax2 will be the WIND/WAVES data
         ax1 = fig.add_subplot(gs[0, 0])
@@ -1658,6 +1668,8 @@ class plot_functions:
         ax1a.axis('off')
         ax2a=fig.add_subplot(gs[1,1])
         ax2a.axis('off')
+
+        plt.subplots_adjust(wspace=0, hspace=0.15)
 
 
         '''
@@ -1699,7 +1711,6 @@ class plot_functions:
                     
         ax2.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
 
-        plt.subplots_adjust(wspace=0, hspace=0.075)
         
         ax2.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
 
@@ -1729,8 +1740,179 @@ class plot_functions:
                 raise SystemError('Error choosing color')
             #WIND data
             ax.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color='black')
-            ax.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
+            if self.smooth_WIND==True:
+                ax.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
             ax.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--')  
+            ax.tick_params(labelsize=self.fsize_ticks) 
+
+            #cmap = plt.cm.jet  # define the colormap
+            # extract all colors from the .jet map
+            cmap = cm.get_cmap('rainbow', n_mfp)  
+            ticks = np.array([0,1,2])
+
+            step=2
+            for m in range(0,n_mfp,step):
+                #plot the mean free paths
+                mfp_val = sim_vars[n,0,m,en_ind,3]
+                #mfp_val_p = sim_vars[n,0,m,en_ind,3]
+                str_mfp = '$\lambda_{\parallel,\oplus}^{+}$='+str(mfp_val)+' [AU]'
+                #str_mfp_p = '$\lambda_{\parallel}^{+}$='+str(mfp_val_p)+' [AU]'
+                color_sim=cmap(m)
+                omni_counts = omni_counts_data_overkappa[n,0,m,en_ind]
+                ax.stairs(omni_counts,t_bins_inj,color=color_sim,linestyle='--')
+                ax.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+                
+                if n==n_kappa-2:
+                    ax.annotate(str_mfp, (1.02,1.2-(0.4/step)*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
+                    #ax.annotate(str_mfp_n, (1.15,0.85-0.3*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
+
+            if n==n_kappa-step:
+                ax.annotate(str_energy, (1.02,1.2-(0.4/step)*(n_mfp)),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+
+            
+            if n==n_kappa-1:
+                ax.set_xlabel('UT Time ($t_{inj}$: '+str(inj_time)+')',fontsize=self.fsize_head)
+
+
+        plt.show(block=False)
+        plt.savefig(os.path.join(self.figure_path,'fig+all_simulations_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+        pass
+    #copy of above function except without colorbar and annotations (identical between h)
+    def plot_all_simulations_one_energy_diss(self,plot,string_dict,folder_path):
+        omni_counts_data_overkappa = self.build_omni_counts_over_kappa()
+        sim_chars_data_overkappa = self.build_sim_chars_over_kappa()
+
+        #we will ALWAYS be considering for these plots one energy, no energy dependence.
+        #so to loop over the mean free paths, we will extract the number of mean free paths
+        n_mfp = np.shape(omni_counts_data_overkappa)[2]
+        n_kappa = np.shape(omni_counts_data_overkappa)[0]
+        inj_time=funcs.load_injection_time()
+        '''
+        loading in all the required data
+        '''
+        
+        #loading in the simulated electron data
+        
+        data_toplot=self.load_files_toplot(plot)
+        #loading in the datetimes bins since (radio-derived) injection
+        #these should be identical for ALL simulations considered, so steal them from the "requested" simulation 
+        t_bins_inj=data_toplot[0]
+        bal_arrival_time=data_toplot[1][self.n_en]
+        #ballistic arrival times (in minutes since injection)
+        bal_arrival_time = inj_time+timedelta(minutes=bal_arrival_time) 
+        #loading in the WIND data (radio and electron data)
+        #first load in the events dictionary
+        event_data=funcs.load_events_data()
+        #loading in the pads data
+        event_en=np.where(self.event_energy==event_data.energies)[0][0]
+        #unpacking the WIND/WAVES data for the event
+        waves_times=event_data.waves_times
+        waves_freq_rad1=event_data.waves_freq_rad1
+        waves_freq_rad2=event_data.waves_freq_rad2
+        waves_volts_rad1=event_data.waves_volts_rad1
+        waves_volts_rad2=event_data.waves_volts_rad2
+        
+        
+        #loading in the WIND omni data
+        WIND_omni_times=event_data.omni_times
+        WIND_omni_fluxes=event_data.omni_fluxes[event_en]
+        WIND_omni_fluxes_smoothed=event_data.omni_fluxes_smoothed[event_en]
+
+        '''
+        finding the radio travel time and expected arrival
+        '''
+        
+        radio_travel_time_minutes=funcs.light_travel_time_1AU()
+        radio_arrival_time = inj_time+timedelta(minutes=radio_travel_time_minutes)
+
+        '''
+        extracting the required energy chosen to plot
+        '''
+        en_inds = self.energy_to_index()
+
+        '''
+        building the figures need two panels for the radio data, and n_kappa panels for each set of simulations with the different kappa values
+        '''
+
+        #defining the height ratios array, an array of ones of length 2+n_kappa
+
+        hrs = []
+        for n in range(2+n_kappa):
+            hrs.append(1)
+        #fig = plt.figure(constrained_layout=True,figsize=(25,15))
+        fig = plt.figure(figsize=(13,20))
+        gs = GridSpec(2+n_kappa, 1, figure=fig,width_ratios=[1], height_ratios=hrs,)
+        #ax1 and ax2 will be the WIND/WAVES data
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[1,0],sharex=ax1)
+
+        
+        plt.subplots_adjust(wspace=0, hspace=0.15)
+
+
+        '''
+        plotting the radio data
+        '''
+        min_val=10e-1
+        max_val=max(np.max(waves_volts_rad1),np.max(waves_volts_rad2))
+        
+        ax1.set_ylabel(r'Frequency [kHz]',fontsize=self.fsize_head)
+        labelx = -0.05
+        ax1.yaxis.set_label_coords(labelx, 0.0)
+        ax1.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax1.tick_params(labelbottom=False)
+        ax1.set_yscale('log')
+        im=ax1.pcolormesh(waves_times,waves_freq_rad2,waves_volts_rad2.T,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val),cmap='turbo')
+    
+        ax1.tick_params(labelbottom=False)
+            
+        ax1.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        ax1.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
+        
+        #ax.set_xscale('log')
+       # ax1.annotate('CSV PADS summed', (0.7,0.8),xycoords='axes fraction',fontsize=self.fsize_head
+
+        #ax2.set_xlabel(r'Time (Start Time: '+str(waves_times[0])+')',fontsize=self.fsize_head)       
+        ax2.xaxis.set_tick_params(labelsize=self.fsize_head)
+        ax2.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        myFmt = mdates.DateFormatter('%H%M')
+        ax2.xaxis.set_major_formatter(myFmt)
+        ax2.set_yscale('log')
+        im2=ax2.pcolormesh(waves_times,waves_freq_rad1,waves_volts_rad1.T,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val),cmap='turbo')
+                    
+        ax2.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+
+        
+        ax2.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
+        ax2.tick_params(labelbottom=False) 
+
+        sim_vars = sim_chars_data_overkappa[...,0]
+
+        #finding the energy requested to plot
+        en_ind=self.energy_to_index()[0]
+
+        for n in range(n_kappa):
+            kappa = sim_vars[n,0,0,en_ind,0]
+            str_kappa = "$\kappa=$"+str(kappa)
+            ax = fig.add_subplot(gs[2+n,0],sharex=ax1)
+
+            str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
+
+            if n!=n_kappa-1:
+                ax.tick_params(labelbottom=False) 
+
+            all_WIND_energies = event_data.energies
+            try:
+                m=np.where(self.energy_toplot==all_WIND_energies)[0][0]
+                color_WIND=plt.cm.Dark2(m)
+            except:
+                raise SystemError('Error choosing color')
+            #WIND data
+            ax.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color='black')
+            if self.smooth_WIND==True:
+                ax.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
+            ax.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--')  
+            ax.tick_params(labelsize=self.fsize_ticks) 
 
             #cmap = plt.cm.jet  # define the colormap
             # extract all colors from the .jet map
@@ -1741,20 +1923,13 @@ class plot_functions:
             for m in range(0,n_mfp,step):
                 #plot the mean free paths
                 mfp_val = sim_vars[n,0,m,en_ind,2]
-                #mfp_val_p = sim_vars[n,0,m,en_ind,3]
-                str_mfp = '$\lambda_{\parallel,\oplus}^{-}=\lambda_{\parallel,\oplus}^{+}$='+str(mfp_val)+' [AU]'
                 #str_mfp_p = '$\lambda_{\parallel}^{+}$='+str(mfp_val_p)+' [AU]'
                 color_sim=cmap(m)
                 omni_counts = omni_counts_data_overkappa[n,0,m,en_ind]
                 ax.stairs(omni_counts,t_bins_inj,color=color_sim,linestyle='--')
                 ax.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
                 
-                if n==n_kappa-2:
-                    ax.annotate(str_mfp, (1.02,1.0-(0.4/step)*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
-                    #ax.annotate(str_mfp_n, (1.15,0.85-0.3*m),xycoords='axes fraction',fontsize=self.fsize_head,color=color_sim)
 
-            if n==n_kappa-2:
-                ax.annotate(str_energy, (1.02,1.0-(0.4/step)*(n_mfp+1)),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
 
             
             if n==n_kappa-1:
@@ -1762,7 +1937,7 @@ class plot_functions:
 
 
         plt.show(block=False)
-        plt.savefig(os.path.join(self.figure_path,'fig+all_simulations_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+        plt.savefig(os.path.join(self.figure_path,'fig+all_simulations_diss_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
         pass
 
     def plot_WIND_one_energy_imb_comparison(self,plot,string_dict,folder_path):
@@ -1841,7 +2016,7 @@ class plot_functions:
         '''
         
         #fig = plt.figure(constrained_layout=True,figsize=(25,15))
-        fig = plt.figure(figsize=(15,20))
+        fig = plt.figure(figsize=(15,30))
         gs = GridSpec(6, 2, figure=fig,width_ratios=[1,0.14], height_ratios=[1,1,1,1,1,1],)
         #ax1 and ax2 will be the WIND/WAVES data
         ax1 = fig.add_subplot(gs[0, 0])
@@ -1893,11 +2068,16 @@ class plot_functions:
         #cbar = fig.colorbar(im, ax=ax1a,location='right')
         cbar = fig.colorbar(im, ax=ax1a,)
         cbar.ax.tick_params(labelsize=self.fsize_ticks)
-        cbar.ax.set_ylabel('Norm_Volt_RAD1/-2', fontsize=self.fsize_head,x=0.3,y=0.0)
+        cbar.ax.set_ylabel('Norm_Volt_RAD1/-2', fontsize=self.fsize_head,x=0.4,y=0.0)
         ax1.tick_params(labelbottom=False)
             
         ax1.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
         ax1.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
+        print()
+        print('radio arrival time is: ')
+        print(radio_arrival_time)
+        print()
+        #ax1.axvline(x=datetime(year=2002,month=10,day=20,hour=14,minute=11,second=35))
         
         #ax.set_xscale('log')
        # ax1.annotate('CSV PADS summed', (0.7,0.8),xycoords='axes fraction',fontsize=self.fsize_head
@@ -1916,7 +2096,7 @@ class plot_functions:
                     
         ax2.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
 
-        plt.subplots_adjust(wspace=0, hspace=0.1)
+        plt.subplots_adjust(wspace=0, hspace=0.15)
         
         ax2.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
         
@@ -1935,14 +2115,15 @@ class plot_functions:
         #im=ax3.pcolormesh(pads_times,pads_angbeds,pads_wind.T,cmap='rainbow')
         cbar = fig.colorbar(im, ax=ax3a,location='right')
         cbar.ax.tick_params(labelsize=self.fsize_ticks)
-        cbar.ax.set_ylabel('Peak Normed Flux', fontsize=self.fsize_head,y=-0.5)
+        cbar.ax.set_ylabel('Peak Normed Flux', fontsize=self.fsize_head,y=-0.5,x=0.4)
         ax3.yaxis.set_label_coords(labelx, 0.5)
         ax3.set_ylabel('$\\theta$',fontsize=self.fsize_head)
         ax3.tick_params(labelsize=self.fsize_ticks)
         ax3.tick_params(labelbottom=False)
         #ax3.axvline(x=bal_arrival_time,color='purple')              
         ax3.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
-        ax3.annotate('WIND PAD', (0.8,0.8),xycoords='axes fraction',fontsize=self.fsize_head,color='white')
+        WIND_txt = ax3.annotate('WIND', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        WIND_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
         ax3.axhline(y=90,linestyle='--',color='grey')      
         
         ''' 
@@ -1954,8 +2135,8 @@ class plot_functions:
         #ax1.set_xlabel('Time Since Injection [Minutes]',fontsize=fsize_head)
         ax4.tick_params(labelbottom=False)
         ax4.set_ylabel('$\\theta$',fontsize=self.fsize_head)
-        str_mfp_formula=string_dict['mfp_formula']
-        ax1.set_title(str_mfp_formula,loc='right',fontsize=self.fsize_head,pad=20)
+        #str_mfp_formula=string_dict['mfp_formula']
+        #ax1.set_title(str_mfp_formula,loc='right',fontsize=self.fsize_head,pad=20)
         #need to repeat the final entry of t_bins since pcolormesh demands edges have +1 dimension to image values (verified correct in this case)
         #t_bins_minutes=np.insert(t_bins_minutes,len(t_bins_minutes),t_bins_minutes[-1])
         im=ax4.pcolormesh(t_bins_inj,ang_beds_pads[::-1],pads_sim.T,cmap='rainbow',norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
@@ -1969,7 +2150,8 @@ class plot_functions:
         ax4.axhline(y=90,linestyle='--',color='grey')
         ax4.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
         
-        ax4.annotate('Balanced', (0.8,0.8),xycoords='axes fraction',fontsize=self.fsize_head,color='white')
+        bal_txt = ax4.annotate('Balanced', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        bal_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
 
                 
         ''' 
@@ -1998,14 +2180,15 @@ class plot_functions:
         ax5.axhline(y=90,linestyle='--',color='grey')
         ax5.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
         
-        ax5.annotate('Imbalanced', (0.8,0.8),xycoords='axes fraction',fontsize=self.fsize_head,color='white')
+        imbal_txt = ax5.annotate('Imbalanced', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        imbal_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
         
         '''
         stacked omnidirectional plot
-        ''' 
-
-        #simulated wind omni data + poisson errors
-        ax6.stairs(omni_counts,t_bins_inj,color='black')
+        '''
+        
+        #simulated omni data + poisson errors for both balanced and imbalanced cases
+        ax6.stairs(omni_counts,t_bins_inj,color='grey')
         ax6.stairs(omni_counts_comp,t_bins_inj_comp,color='lightgrey',fill=True,edgecolor='black')
 
 
@@ -2024,9 +2207,10 @@ class plot_functions:
             color_WIND=plt.cm.Dark2(n)
         except:
             raise SystemError('Error choosing color')
-        #WIND data
-        ax6.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color=color_WIND)
-        ax6.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
+        #plotting the WIND data
+        ax6.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color='black')
+        if self.smooth_WIND==True:
+            ax6.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
 
         '''
         plotting the ballistic arrival and injection times
@@ -2055,16 +2239,13 @@ class plot_functions:
 
         ##hard code symmetric mean free path
         str_mfp = "$\lambda_{\parallel, \oplus}^{-}=\lambda_{\parallel,\oplus}^{+}=$"+str(self.mfp_comp_toplot[0,0])+' [AU]'
-        strs = [str_energy,str_mfp,str_mfp_n_imbalanced,str_mfp_p_imbalanced,str_alpha,str_kappa]
+        #strs = [str_energy,str_mfp,str_mfp_n_imbalanced,str_mfp_p_imbalanced,str_kappa]
+        #strs = [str_mfp,str_mfp_n_imbalanced,str_mfp_p_imbalanced,str_kappa]
+        strs = [str_mfp_p_imbalanced,str_kappa]
 
         for i,string in enumerate(strs):
             color='black'
-            pos =(1.05,0.8-0.25*(i-1))
-            if i==0:
-                color=color_WIND
-                pos = (0.8,0.8)
-            if i==2 or i==3:
-                color='grey'
+            pos =(1.05,0.5-0.25*(i-1))
             ax6.annotate(string, pos,xycoords='axes fraction',fontsize=self.fsize_head,color=color)
         
         #ax5.annotate('WIND', (0.8,0.15),xycoords='axes fraction',fontsize=self.fsize_head)
@@ -2081,6 +2262,277 @@ class plot_functions:
 
         str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
         plt.savefig(os.path.join(self.figure_path,'fig+one_energy_comparison_imb_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
+
+        pass
+    #identical variant as above but for diss (without annotations and colorbars)
+    def plot_WIND_one_energy_imb_comparison_diss(self,plot,string_dict,folder_path):
+         
+        inj_time=funcs.load_injection_time()
+        '''
+        loading in all the required symmetric data
+        '''
+        #loading in the simulated electron data
+        
+        data_toplot,data_toplot_comp = self.load_files_comp_toplot(plot)
+        
+        t_bins_minutes=data_toplot[0]
+        omni_counts=data_toplot[1][self.n_en]
+        omni_counts_ers=data_toplot[2][self.n_en]
+        ang_beds_pads=data_toplot[3]
+        #print(mu_beds_pads)
+        pads_sim=data_toplot[4][self.n_en]
+        bal_arrival_time=data_toplot[5][self.n_en]
+        
+        #creating the error bounds in mu and z
+        omni_ers_n = omni_counts-omni_counts_ers
+        omni_ers_p = omni_counts+omni_counts_ers
+        
+        #ballistic arrival times (in minutes since injection)
+        bal_arrival_time = inj_time+timedelta(minutes=bal_arrival_time)
+        
+        #loading in the datetimes bins since (radio-derived) injection
+        t_bins_inj=data_toplot[6]
+
+        '''
+        loading in all the required comparison imbalanced simulation data
+        '''
+        #loading in the simulated electron data
+        
+        t_bins_minutes_comp=data_toplot_comp[0]
+        omni_counts_comp=data_toplot_comp[1][self.n_en]
+        omni_counts_ers_comp=data_toplot_comp[2][self.n_en]
+        ang_beds_pads_comp=data_toplot_comp[3]
+        #print(mu_beds_pads)
+        pads_sim_comp=data_toplot_comp[4][self.n_en]
+        
+        #creating the error bounds in mu and z
+        omni_ers_n_comp = omni_counts_comp-omni_counts_ers_comp
+        omni_ers_p_comp = omni_counts_comp+omni_counts_ers_comp
+        
+        #loading in the datetimes bins since (radio-derived) injection
+        t_bins_inj_comp=data_toplot_comp[6]
+
+        #loading in the WIND data (radio and electron data)
+        #first load in the events dictionary
+        event_data=funcs.load_events_data()
+        #unpacking the WIND/WAVES data for the event
+        waves_times=event_data.waves_times
+        waves_freq_rad1=event_data.waves_freq_rad1
+        waves_freq_rad2=event_data.waves_freq_rad2
+        waves_volts_rad1=event_data.waves_volts_rad1
+        waves_volts_rad2=event_data.waves_volts_rad2
+        
+        #loading in the pads data
+        event_en=np.where(self.event_energy==event_data.energies)[0][0]
+        pads_times=event_data.pads_times
+        pads_angbeds=event_data.pads_angbeds
+        pads_wind=event_data.pads[event_en]
+        
+        #loading in the WIND omni data
+        WIND_omni_times=event_data.omni_times
+        WIND_omni_fluxes=event_data.omni_fluxes[event_en]
+        WIND_omni_fluxes_smoothed=event_data.omni_fluxes_smoothed[event_en]
+        
+        #loading in the event time profile charecteristics
+        event_omni_chars = funcs.load_event_chars()
+        
+        '''
+        creating the Figures
+        '''
+        
+        #fig = plt.figure(constrained_layout=True,figsize=(25,15))
+        fig = plt.figure(figsize=(15,25))
+        gs = GridSpec(6, 1, figure=fig,width_ratios=[1], height_ratios=[1,1,1,1,1,1],)
+        #ax1 and ax2 will be the WIND/WAVES data
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[1,0],sharex=ax1)
+        #ax3 and ax4 will hold the WIND pads and simulated pads
+        ax3 = fig.add_subplot(gs[2,0],sharex=ax1)
+        ax4 = fig.add_subplot(gs[3,0],sharex=ax1)
+        #ax5 will hold the simulated imbalanced comparison pad
+        ax5 = fig.add_subplot(gs[4,0],sharex=ax1)
+        #ax5 will hold the WIND omnis and simulated omnis
+        ax6 = fig.add_subplot(gs[5,0],sharex=ax1)
+
+        '''
+        finding the radio travel time and expected arrival
+        '''
+        
+        radio_travel_time_minutes=funcs.light_travel_time_1AU()
+        radio_arrival_time = inj_time+timedelta(minutes=radio_travel_time_minutes)
+        
+        '''
+        plotting the radio data check rad1 vs rad2
+        '''
+        
+        min_val=10e-1
+        max_val=max(np.max(waves_volts_rad1),np.max(waves_volts_rad2))
+        
+        ax1.set_ylabel(r'Frequency [kHz]',fontsize=self.fsize_head)
+        labelx = -0.05
+        ax1.yaxis.set_label_coords(labelx, 0.0)
+        ax1.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax1.tick_params(labelbottom=False)
+        ax1.set_yscale('log')
+        im=ax1.pcolormesh(waves_times,waves_freq_rad2,waves_volts_rad2.T,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val),cmap='turbo')
+        #cbar = fig.colorbar(im, ax=ax1a,location='right')
+        ax1.tick_params(labelbottom=False)
+            
+        ax1.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        ax1.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
+        
+        #ax.set_xscale('log')
+       # ax1.annotate('CSV PADS summed', (0.7,0.8),xycoords='axes fraction',fontsize=self.fsize_head
+
+        #ax2.set_xlabel(r'Time (Start Time: '+str(waves_times[0])+')',fontsize=self.fsize_head)       
+        ax2.xaxis.set_tick_params(labelsize=self.fsize_head)
+        ax2.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        myFmt = mdates.DateFormatter('%H%M')
+        ax2.xaxis.set_major_formatter(myFmt)
+        ax2.set_yscale('log')
+        im2=ax2.pcolormesh(waves_times,waves_freq_rad1,waves_volts_rad1.T,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val),cmap='turbo')
+        ax2.tick_params(labelbottom=False)
+        ax2.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+
+        plt.subplots_adjust(wspace=0, hspace=0.15)
+        
+        ax2.axvline(x=radio_arrival_time,color='yellow',linewidth=1.5,linestyle='dashed')
+        
+        
+        '''
+        WIND pads (symmetric)
+        '''
+        #take absolute value so to take logarithm of the pitch-angle distributions for testing
+        pads_wind=np.abs(pads_wind)
+        pads_sim = np.abs(pads_sim)
+        min_val=10e-4
+        max_val=1.0
+        pads_sim[pads_sim==0]=min_val
+        
+        im=ax3.pcolormesh(pads_times,pads_angbeds,pads_wind.T,cmap='rainbow',norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
+        #im=ax3.pcolormesh(pads_times,pads_angbeds,pads_wind.T,cmap='rainbow')
+        ax3.yaxis.set_label_coords(labelx, 0.5)
+        ax3.set_ylabel('$\\theta$',fontsize=self.fsize_head)
+        ax3.tick_params(labelsize=self.fsize_ticks)
+        ax3.tick_params(labelbottom=False)
+        #ax3.axvline(x=bal_arrival_time,color='purple')              
+        ax3.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        WIND_txt = ax3.annotate('WIND', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        WIND_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
+        ax3.axhline(y=90,linestyle='--',color='grey')      
+        
+        ''' 
+        Simulated pads
+        '''
+        
+        ax4.xaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax4.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        #ax1.set_xlabel('Time Since Injection [Minutes]',fontsize=fsize_head)
+        ax4.tick_params(labelbottom=False)
+        ax4.set_ylabel('$\\theta$',fontsize=self.fsize_head)
+        #str_mfp_formula=string_dict['mfp_formula']
+        #ax1.set_title(str_mfp_formula,loc='right',fontsize=self.fsize_head,pad=20)
+        #need to repeat the final entry of t_bins since pcolormesh demands edges have +1 dimension to image values (verified correct in this case)
+        #t_bins_minutes=np.insert(t_bins_minutes,len(t_bins_minutes),t_bins_minutes[-1])
+        im=ax4.pcolormesh(t_bins_inj,ang_beds_pads[::-1],pads_sim.T,cmap='rainbow',norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
+        #im=ax4.pcolormesh(t_bins_inj,ang_beds_pads[::-1],pads_sim.T,cmap='rainbow')
+        #ax1.imshow((t_bins_minutes,mu_beds_pads),pads.T)
+        #cbar.ax.set_ylabel('Peak Normed Flux', fontsize=self.fsize_head)
+  
+        ax4.yaxis.set_label_coords(labelx,.5)
+        ax4.axhline(y=90,linestyle='--',color='grey')
+        ax4.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        
+        bal_txt = ax4.annotate('Balanced', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        bal_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
+
+                
+        ''' 
+        Simulated pads (imbalanced comparison)
+        '''
+        pads_sim_comp=np.abs(pads_sim_comp)
+        min_val=10e-4
+        max_val=1.0
+        pads_sim_comp[pads_sim_comp==0]=min_val
+        ax5.xaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax5.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        #ax1.set_xlabel('Time Since Injection [Minutes]',fontsize=fsize_head)
+        ax5.tick_params(labelbottom=False)
+        ax5.set_ylabel('$\\theta$',fontsize=self.fsize_head)
+        #ax1.set_title(str_mfp_formula,loc='right',fontsize=self.fsize_head,pad=20)
+        #need to repeat the final entry of t_bins since pcolormesh demands edges have +1 dimension to image values (verified correct in this case)
+        #t_bins_minutes=np.insert(t_bins_minutes,len(t_bins_minutes),t_bins_minutes[-1])
+        im_comp=ax5.pcolormesh(t_bins_inj_comp,ang_beds_pads_comp[::-1],pads_sim_comp.T,cmap='rainbow',norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
+        #im=ax4.pcolormesh(t_bins_inj,ang_beds_pads[::-1],pads_sim.T,cmap='rainbow')
+        #ax1.imshow((t_bins_minutes,mu_beds_pads),pads.T)
+        #cbar.ax.set_ylabel('Peak Normed Flux', fontsize=self.fsize_head)
+  
+        ax5.yaxis.set_label_coords(labelx,.5)
+        ax5.axhline(y=90,linestyle='--',color='grey')
+        ax5.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        
+        imbal_txt = ax5.annotate('Imbalanced', (0.85,0.7),xycoords='axes fraction',fontsize=self.fsize_head,color='black')
+        imbal_txt.set_bbox(dict(facecolor='white', alpha=1.0, edgecolor='black'))
+        
+        '''
+        stacked omnidirectional plot
+        '''
+        
+        #simulated wind omni data + poisson errors
+        ax6.stairs(omni_counts,t_bins_inj,color='grey')
+        ax6.stairs(omni_counts_comp,t_bins_inj_comp,color='lightgrey',fill=True,edgecolor='black')
+
+
+        #inserting a repeated last entry for pltoting purposes, so the plot knows to extend the last value
+        omni_ers_n=np.insert(omni_ers_n,len(omni_ers_n),omni_ers_n[-1])
+        omni_ers_p=np.insert(omni_ers_p,len(omni_ers_p),omni_ers_p[-1])
+        omni_ers_n_comp=np.insert(omni_ers_n_comp,len(omni_ers_n_comp),omni_ers_n_comp[-1])
+        omni_ers_p_comp=np.insert(omni_ers_p_comp,len(omni_ers_p_comp),omni_ers_p_comp[-1])
+        #ax6.fill_between(t_bins_inj, omni_ers_n, omni_ers_p,step='post', color='pink', alpha=0.15,edgecolor='black')
+        ax6.fill_between(t_bins_inj_comp, omni_ers_n_comp, omni_ers_p_comp,step='post', color='pink', alpha=0.15,edgecolor='black')
+        #plot the expected light travel arrive time
+        
+        all_WIND_energies = event_data.energies
+        try:
+            n=np.where(self.energy_toplot==all_WIND_energies)[0][0]
+            color_WIND=plt.cm.Dark2(n)
+        except:
+            raise SystemError('Error choosing color')
+        #plotting the WIND data
+        ax6.step(WIND_omni_times,WIND_omni_fluxes,where='post',label='WIND',color='black')
+        if self.smooth_WIND==True:
+            ax6.plot(WIND_omni_times,WIND_omni_fluxes_smoothed,color='grey')
+
+        '''
+        plotting the ballistic arrival and injection times
+        '''
+
+        ax3.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
+        ax4.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
+        ax5.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
+        ax6.axvline(x=bal_arrival_time,color=color_WIND,linestyle='--') 
+        #plotting the injection time too
+        ax4.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='dashed')
+        ax6.axvline(x=inj_time,color='grey',linewidth=1.5,linestyle='--')
+
+        '''
+        annotating bottom to see simulation data
+        '''
+        
+        #ax5.annotate('WIND', (0.8,0.15),xycoords='axes fraction',fontsize=self.fsize_head)
+        
+        ax6.xaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax6.yaxis.set_tick_params(labelsize=self.fsize_ticks)
+        ax6.set_xlabel('UT Time ($t_{inj}$: '+str(inj_time)+')',fontsize=self.fsize_head)
+        #ax5.axvline(x=inj_time,color='green',linewidth=1.5,linestyle='dashed')
+        
+        #setting the xlim for neat plotting
+        ax4.set_xlim(waves_times[0],pads_times[-1])
+        
+        plt.show(block=False)
+
+        str_energy = 'E='+str(self.energy_toplot)+str(' [keV]')
+        plt.savefig(os.path.join(self.figure_path,'fig+one_energy_comparison_imb_diss_'+str_energy+'.pdf'),format='pdf',bbox_inches='tight')
 
         pass
     
@@ -2172,6 +2624,8 @@ class plot_functions:
         #scattering the event data
         ax_main.scatter(t_r_event,t_p_event,c=1,marker='x',cmap=cmap,s=50,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
         ax_main.errorbar(t_r_event,t_p_event,xerr=t_r_event_unc,yerr=t_p_event_unc,color='grey',lw=0.2,capsize=2)
+        ax_main.axvline(x=t_r_event,linestyle='--',color='grey')
+        ax_main.axhline(y=t_p_event,linestyle='--',color='grey')
         
         #scattering the comparison between imbalanced and balanced
         ax_main.scatter(t_r_balanced,t_p_balanced,c=t_d_balanced/t_d_event,cmap=cmap,vmin=t_d_min_cbar,vmax=t_d_max_cbar)
@@ -2185,7 +2639,7 @@ class plot_functions:
         #ax.errorbar(WIND_energies,event_omni_chars,yerr=event_omni_chars_uncertainty,color='black',marker='*',capsize=5)
         ax_main.set_xscale('log')
         #ax.set_yscale('log')
-        ax_main.set_xlim(10,1000)   
+        ax_main.set_xlim(10,10000)   
 
         ax_main.set_ylabel('$t_p$ [s]',fontsize=self.fsize_head)
         ax_main.set_xlabel('$t_r$ [s]',fontsize=self.fsize_head)
@@ -2207,13 +2661,13 @@ class plot_functions:
 
 
         #annotating the two data points
-        str_mfp_balanced = '$\lambda_{\parallel}^{-}=\lambda_{\parallel}^{+}$='+str(self.mfp_toplot[0])+' [AU]'
-        str_mfp_imbalanced_n = '$\lambda_{\parallel}^{-}=$'+str(self.mfp_comp_toplot[1,0])+' [AU]'
-        str_mfp_imbalanced_p = '$\lambda_{\parallel}^{+}=$'+str(self.mfp_comp_toplot[1,1])+' [AU]'
+        str_mfp_balanced = '$\lambda_{\parallel,\oplus}^{-}=\lambda_{\parallel,\oplus}^{+}$='+str(self.mfp_comp_toplot[0,0])+' [AU]'
+        str_mfp_imbalanced_n = '$\lambda_{\parallel,\oplus}^{-}=$'+str(self.mfp_comp_toplot[1,0])+' [AU]'
+        str_mfp_imbalanced_p = '$\lambda_{\parallel,\oplus}^{+}=$'+str(self.mfp_comp_toplot[1,1])+' [AU]'
 
-        ax_main.annotate(str_mfp_balanced,xytext=(t_r_balanced+50,t_p_balanced+10),xy=(t_r_balanced,t_p_balanced),arrowprops=dict(arrowstyle='-|>'))
-        ax_main.annotate(str_mfp_imbalanced_n,xytext=(t_r_imbalanced+50,t_p_imbalanced+20),xy=(t_r_imbalanced,t_p_imbalanced))
-        ax_main.annotate(str_mfp_imbalanced_p,xytext=(t_r_imbalanced+50,t_p_imbalanced+15),xy=(t_r_imbalanced,t_p_imbalanced),arrowprops=dict(arrowstyle='-|>'))
+        ax_main.annotate(str_mfp_balanced,xytext=(t_r_balanced-500,t_p_balanced-200),xy=(t_r_balanced,t_p_balanced),arrowprops=dict(arrowstyle='-|>'),fontsize=self.fsize_head)
+        ax_main.annotate(str_mfp_imbalanced_n,xytext=(t_r_imbalanced+20,t_p_imbalanced+300),xy=(t_r_imbalanced,t_p_imbalanced),fontsize=self.fsize_head)
+        ax_main.annotate(str_mfp_imbalanced_p,xytext=(t_r_imbalanced+20,t_p_imbalanced+200),xy=(t_r_imbalanced,t_p_imbalanced),arrowprops=dict(arrowstyle='-|>'),fontsize=self.fsize_head)
 
         plt.show(block=False)
         str_energy = "E="+str(self.energy_toplot)+'keV'
@@ -2265,8 +2719,12 @@ class plot_functions:
             #need radio data, omnidirectional data and to load in all the simulations as in plot_all_omni_characteristic
             if plot=='plot_all_simulations_one_energy':
                 self.plot_all_simulations_one_energy(plot,string_dict,folder_path)
+            if plot=='plot_all_simulations_one_energy_diss':
+                self.plot_all_simulations_one_energy_diss(plot,string_dict,folder_path)
             if plot=='plot_WIND_one_energy_imb_comparison':
                 self.plot_WIND_one_energy_imb_comparison(plot,string_dict,folder_path) 
+            if plot=='plot_WIND_one_energy_imb_comparison_diss':
+                self.plot_WIND_one_energy_imb_comparison_diss(plot,string_dict,folder_path) 
             if plot=='plot_omni_characteristics_imb_comparison':
                 self.plot_omni_characteristics_imb_comparison(plot,string_dict,folder_path)
 

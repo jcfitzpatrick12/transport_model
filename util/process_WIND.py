@@ -65,6 +65,7 @@ class WIND_functions:
         self.t_evaluate_background = self.WIND_dict['t_evaluate_background[mins]']
         self.event_considering=self.WIND_dict['event_considering']
         self.window_size = self.WIND_dict['window_size[s]']
+        self.smooth_WIND=self.WIND_dict['smooth_WIND']
 
         #pulling out the simulated energy arrays
         self.sim_dict=dicts['sim_dict']
@@ -182,8 +183,12 @@ class WIND_functions:
             window_size_num_data_points = int(self.window_size/t_res)
             #print(window_size_num_data_points*t_res)
             #print(self.window_size)
-            #raise SystemExit
-            flux_smoothed = scipy.signal.savgol_filter(flux_background_corrected,window_size_num_data_points,3)
+            #smooth the data if requested
+            if self.smooth_WIND==True:
+                flux_smoothed = scipy.signal.savgol_filter(flux_background_corrected,window_size_num_data_points,3)
+            #do not smooth data if requested (for simplicity just set flux_smoothed to the original data.)
+            if self.smooth_WIND==False:
+                flux_smoothed = flux_background_corrected
             #normalise with respect to the peak intensity
             flux_normalised=flux_background_corrected/np.nanmax(flux_smoothed)
             flux_smoothed/=np.nanmax(flux_smoothed)
